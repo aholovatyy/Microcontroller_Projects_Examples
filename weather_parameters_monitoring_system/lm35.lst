@@ -1,0 +1,99 @@
+   1               		.file	"lm35.c"
+   2               	__SREG__ = 0x3f
+   3               	__SP_H__ = 0x3e
+   4               	__SP_L__ = 0x3d
+   5               	__CCP__  = 0x34
+   6               	__tmp_reg__ = 0
+   7               	__zero_reg__ = 1
+  15               	.Ltext0:
+  16               	.global	initADC
+  18               	initADC:
+  19               	.LFB8:
+  20               	.LM1:
+  21               	/* prologue: function */
+  22               	/* frame size = 0 */
+  23               	.LM2:
+  24 0000 80E4      		ldi r24,lo8(64)
+  25 0002 87B9      		out 39-32,r24
+  26               	.LM3:
+  27 0004 87E8      		ldi r24,lo8(-121)
+  28 0006 86B9      		out 38-32,r24
+  29               	/* epilogue start */
+  30               	.LM4:
+  31 0008 0895      		ret
+  32               	.LFE8:
+  34               	.global	readADC
+  36               	readADC:
+  37               	.LFB9:
+  38               	.LM5:
+  39               	.LVL0:
+  40               	/* prologue: function */
+  41               	/* frame size = 0 */
+  42               	.LM6:
+  43 000a 97B1      		in r25,39-32
+  44 000c 8770      		andi r24,lo8(7)
+  45               	.LVL1:
+  46 000e 892B      		or r24,r25
+  47 0010 87B9      		out 39-32,r24
+  48               	.LM7:
+  49 0012 369A      		sbi 38-32,6
+  50               	.L4:
+  51               	.LM8:
+  52 0014 349B      		sbis 38-32,4
+  53 0016 00C0      		rjmp .L4
+  54               	.LM9:
+  55 0018 349A      		sbi 38-32,4
+  56               	.LM10:
+  57 001a 24B1      		in r18,36-32
+  58 001c 35B1      		in r19,(36)+1-32
+  59               	.LM11:
+  60 001e C901      		movw r24,r18
+  61               	/* epilogue start */
+  62 0020 0895      		ret
+  63               	.LFE9:
+  65               	.global	getTemp_lm35
+  67               	getTemp_lm35:
+  68               	.LFB10:
+  69               	.LM12:
+  70               	.LVL2:
+  71               	/* prologue: function */
+  72               	/* frame size = 0 */
+  73               	.LM13:
+  74 0022 A0E0      		ldi r26,lo8(0)
+  75 0024 B0E0      		ldi r27,hi8(0)
+  76               	.LVL3:
+  77 0026 BC01      		movw r22,r24
+  78 0028 CD01      		movw r24,r26
+  79 002a 0E94 0000 		call __floatunsisf
+  80               	.LVL4:
+  81 002e 26EF      		ldi r18,lo8(0x409c28f6)
+  82 0030 38E2      		ldi r19,hi8(0x409c28f6)
+  83 0032 4CE9      		ldi r20,hlo8(0x409c28f6)
+  84 0034 50E4      		ldi r21,hhi8(0x409c28f6)
+  85 0036 0E94 0000 		call __mulsf3
+  86 003a 20E0      		ldi r18,lo8(0x41200000)
+  87 003c 30E0      		ldi r19,hi8(0x41200000)
+  88 003e 40E2      		ldi r20,hlo8(0x41200000)
+  89 0040 51E4      		ldi r21,hhi8(0x41200000)
+  90 0042 0E94 0000 		call __divsf3
+  91               	/* epilogue start */
+  92               	.LM14:
+  93 0046 0895      		ret
+  94               	.LFE10:
+ 136               	.Letext0:
+DEFINED SYMBOLS
+                            *ABS*:00000000 lm35.c
+C:\Users\Andriy\AppData\Local\Temp/ccsRkjKd.s:2      *ABS*:0000003f __SREG__
+C:\Users\Andriy\AppData\Local\Temp/ccsRkjKd.s:3      *ABS*:0000003e __SP_H__
+C:\Users\Andriy\AppData\Local\Temp/ccsRkjKd.s:4      *ABS*:0000003d __SP_L__
+C:\Users\Andriy\AppData\Local\Temp/ccsRkjKd.s:5      *ABS*:00000034 __CCP__
+C:\Users\Andriy\AppData\Local\Temp/ccsRkjKd.s:6      *ABS*:00000000 __tmp_reg__
+C:\Users\Andriy\AppData\Local\Temp/ccsRkjKd.s:7      *ABS*:00000001 __zero_reg__
+C:\Users\Andriy\AppData\Local\Temp/ccsRkjKd.s:18     .text:00000000 initADC
+C:\Users\Andriy\AppData\Local\Temp/ccsRkjKd.s:36     .text:0000000a readADC
+C:\Users\Andriy\AppData\Local\Temp/ccsRkjKd.s:67     .text:00000022 getTemp_lm35
+
+UNDEFINED SYMBOLS
+__floatunsisf
+__mulsf3
+__divsf3

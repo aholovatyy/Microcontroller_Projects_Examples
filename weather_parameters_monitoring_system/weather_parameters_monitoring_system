@@ -1,0 +1,709 @@
+/*****************************************************
+Project : Multi-function digital device with alarm Clock, thermometer and barometer 
+(Цифровий пристрій з функціями годинника-будильника, термометра та барометра)
+Version : 
+Date    : 2018
+Author  : (C) Ihor Levkovych                                           
+Comments: 
+                           
+Chip type           : ATmega32
+Program type        : Application
+Clock frequency     : 16,000000 MHz
+Memory model        : Small
+External SRAM size  : 0
+Data Stack size     : 512
+*****************************************************/
+
+#include <avr/io.h> 
+#include <avr/interrupt.h>
+#include <util/delay.h>
+#include <stdio.h> //input/output library  
+#include "mpx4115.h" //MPX4115 pressure sensor library
+#include "therm_ds18b20.h" // DS18B20 temperature sensor library
+#include "lcd_lib.h" // LCD library
+#include "ds1307.h"
+
+#define BTN_PORT PORTB
+#define BTN_PIN PINB
+#define BTN_DDR DDRB
+
+#define MENU_ENTER_BTN 0
+#define SELECT_PLUS_BTN 1
+#define SELECT_MINUS_BTN 2
+#define EXIT_BTN 3
+
+
+unsigned char PREV_BTN_PIN=0xff;
+
+char *weekdays[]={"Sun","Mon","Tue","Wed","Thr","Fri","Sat"};
+char *monthes[]={"Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"};
+unsigned char hour, min, sec, wd, date, month, year; 
+char lcd_buffer[33];   
+
+unsigned char get_key_status(unsigned char BTN_ID)
+{
+	return (!(BTN_PIN&(1<<BTN_ID)));
+}
+
+unsigned char get_prev_key_status(unsigned char BTN_ID)
+{
+	return (!(PREV_BTN_PIN&(1<<BTN_ID)));
+}
+
+
+void set_time(void)
+{
+ unsigned char i=0, x=0;
+ char ok=0;
+ char *items[]={"wd","hh","mm","ss","^^"};
+ unsigned char wd;                 
+ hour=0; min=0; sec=0;
+ 
+ rtc_get_time(&hour,&min,&sec, &wd);
+ wd--;
+ LCDclr();
+
+ while(!ok)
+ {
+   PREV_BTN_PIN=BTN_PIN;
+   LCDGotoXY(x,1);
+   LCDstring(items[i]);
+   sprintf(lcd_buffer,"%s %u%u:%u%u:%u%u OK", weekdays[wd], hour/10,hour%10, min/10,min%10, sec/10,sec%10);
+   LCDGotoXY(0,0);
+   LCDstring(lcd_buffer);
+   if(get_key_status(SELECT_PLUS_BTN))
+   {
+		if (!get_prev_key_status(SELECT_PLUS_BTN))
+		{
+			switch(i)
+			{
+				case 0:
+					if (wd==6) wd=0;
+					else wd++;
+				break;
+				case 1:
+					if (hour==23) hour=0;
+					else hour++;
+				break;
+				case 2:
+					if (min==59) min=0;
+					else min++;
+				break;
+				case 3:
+					if (sec==59) sec=0;
+					else sec++;
+				break;
+				case 4:
+					ok=1;
+				break;
+			}
+
+        }
+   }
+
+   if (get_key_status(SELECT_MINUS_BTN))
+   {
+		if (!get_prev_key_status(SELECT_MINUS_BTN))
+        {
+                switch (i)
+                {
+                        case 0: if (wd==6) wd=0;
+                                else wd++;
+                                break;
+                        case 1: if (hour==0) hour=23;
+                                else hour--;
+                                break;
+                        case 2: if (min==0) min=59;
+                                else min--;
+                                break;
+                        case 3: if (sec==0) sec=59;
+                                else sec--;
+                                break;
+                        case 4: ok=1;
+                                break;
+                }
+
+         }
+     }
+
+     if(get_key_status(MENU_ENTER_BTN))
+     {
+       if(!get_prev_key_status(MENU_ENTER_BTN))
+       {
+          LCDGotoXY(x,1);
+          LCDstring("  ");
+          if (i == 4)
+          {
+             i = 0;
+             x = 0;
+          }
+          else
+          {
+            if (i == 0) x += 4;
+            else x += 3;
+            i++;
+          }
+
+         }
+       }
+
+         if(get_key_status(EXIT_BTN))
+         {
+                if(!get_prev_key_status(EXIT_BTN))
+                {
+                        PREV_BTN_PIN=BTN_PIN;
+                        return;
+                }
+         }
+
+ }
+ rtc_set_time(hour,min,sec,wd+1);
+}
+
+void set_date(void)
+{
+ char ok=0;
+ char items[4][5]={"dd","mm","yy","^^"};
+ unsigned char i=0, x=0;
+ 
+ rtc_get_date(&date,&month,&year);
+
+ LCDclr();
+
+ while(!ok)
+ {
+   PREV_BTN_PIN=BTN_PIN;
+   LCDGotoXY(x,1);
+   LCDstring(items[i]);
+   sprintf(lcd_buffer,"%u%u-%u%u-%u%u OK",date/10,date%10, month/10,month%10, year/10,year%10);
+   LCDGotoXY(3,0);
+   LCDstring(lcd_buffer);
+   if (get_key_status(SELECT_PLUS_BTN))
+   {
+        if (get_key_status(SELECT_PLUS_BTN))
+        if (!get_prev_key_status(SELECT_PLUS_BTN))
+        {
+                switch (i)
+                {
+                        case 0:
+                                if (date==31) date=0;
+                                else date++;
+                                break;
+                        case 1:
+                                if (month==12) month=0;
+                                else month++;
+                                break;
+                        case 2:
+                                if (year==99) year=0;
+                                else year++;
+                                break;
+                        case 3: ok=1; break;
+                }
+
+         }
+     }
+
+     if (get_key_status(SELECT_MINUS_BTN))
+     {
+        if (get_key_status(SELECT_MINUS_BTN))
+        if (!get_prev_key_status(SELECT_MINUS_BTN))
+        {
+                switch (i)
+                {
+                        case 0:
+                                if (date==0) date=31;
+                                else date--;
+                                break;
+                        case 1:
+                                if (month==0) month=12;
+                                else month--;
+                                break;
+                        case 2:
+                                if (year==0) year=99;
+                                else year--;
+                                break;
+                        case 3: ok=1; break;
+                }
+
+         }
+     }
+
+     if (get_key_status(MENU_ENTER_BTN))
+     {
+       if (!get_prev_key_status(MENU_ENTER_BTN))
+       {
+          LCDGotoXY(x,1);
+          LCDstring("  ");
+          if (i==3)
+          {
+             i=0;
+             x=3;
+          }
+          else
+          {
+            i++;
+            x+=3;
+          }
+
+         }
+       }
+
+         if (get_key_status(EXIT_BTN))
+         {
+                if (!get_prev_key_status(EXIT_BTN))
+                {
+                        PREV_BTN_PIN=BTN_PIN;
+                        LCDclr();
+                        return;
+                }
+         }
+
+ }
+ rtc_set_date(&date,&month,&year);
+} 
+
+
+void set_alarm_clock(void)
+{
+ unsigned char i = 0, x = 0;
+ char ok = 0;
+ char *items[]={"hh","mm","ss","^^"};
+ hour = 0; min = 0; sec = 0, wd = 0;
+ 
+ rtc_get_time(&hour,&min,&sec, &wd);
+ wd--;
+ LCDclr();
+
+ while(!ok)
+ {
+   PREV_BTN_PIN = BTN_PIN;
+   LCDGotoXY(x,1);
+   LCDstring(items[i]);
+   sprintf(lcd_buffer,"%s %u%u:%u%u:%u%u OK", weekdays[wd], hour/10,hour%10, min/10,min%10, sec/10,sec%10);
+   LCDGotoXY(0,0);
+   LCDstring(lcd_buffer);
+   if(get_key_status(SELECT_PLUS_BTN))
+   {
+		if (!get_prev_key_status(SELECT_PLUS_BTN))
+		{
+			switch(i)
+			{
+				case 0:
+					if (wd==6) wd=0;
+					else wd++;
+				break;
+				case 1:
+					if (hour==23) hour=0;
+					else hour++;
+				break;
+				case 2:
+					if (min==59) min=0;
+					else min++;
+				break;
+				case 3:
+					if (sec==59) sec=0;
+					else sec++;
+				break;
+				case 4:
+					ok=1;
+				break;
+			}
+
+        }
+   }
+
+   if (get_key_status(SELECT_MINUS_BTN))
+   {
+		if (!get_prev_key_status(SELECT_MINUS_BTN))
+        {
+                switch (i)
+                {
+                        case 0: if (wd==6) wd=0;
+                                else wd++;
+                                break;
+                        case 1: if (hour==0) hour=23;
+                                else hour--;
+                                break;
+                        case 2: if (min==0) min=59;
+                                else min--;
+                                break;
+                        case 3: if (sec==0) sec=59;
+                                else sec--;
+                                break;
+                        case 4: ok=1;
+                                break;
+                }
+
+         }
+     }
+
+     if(get_key_status(MENU_ENTER_BTN))
+     {
+       if(!get_prev_key_status(MENU_ENTER_BTN))
+       {
+          LCDGotoXY(x,1);
+          LCDstring("  ");
+          if (i == 4)
+          {
+             i = 0;
+             x = 0;
+          }
+          else
+          {
+            if (i == 0) x += 4;
+            else x += 3;
+            i++;
+          }
+
+         }
+       }
+
+         if(get_key_status(EXIT_BTN))
+         {
+                if(!get_prev_key_status(EXIT_BTN))
+                {
+                        PREV_BTN_PIN=BTN_PIN;
+                        return;
+                }
+         }
+
+ }
+ //rtc_set_time(hour,min,sec,wd+1);
+}
+
+void set_time_format(void)
+{
+ unsigned char i = 0, x = 0;
+ char ok = 0;
+ char *items[]={"wd","hh","mm","ss","^^"};
+ unsigned char wd;                 
+ hour = 0; min = 0; sec = 0;
+ 
+ rtc_get_time(&hour,&min,&sec, &wd);
+ wd--;
+ LCDclr();
+
+ while(!ok)
+ {
+   PREV_BTN_PIN=BTN_PIN;
+   LCDGotoXY(x,1);
+   LCDstring(items[i]);
+   sprintf(lcd_buffer,"%s %u%u:%u%u:%u%u OK", weekdays[wd], hour/10,hour%10, min/10,min%10, sec/10,sec%10);
+   LCDGotoXY(0,0);
+   LCDstring(lcd_buffer);
+   if(get_key_status(SELECT_PLUS_BTN))
+   {
+		if (!get_prev_key_status(SELECT_PLUS_BTN))
+		{
+			switch(i)
+			{
+				case 0:
+					if (wd==6) wd=0;
+					else wd++;
+				break;
+				case 1:
+					if (hour==23) hour=0;
+					else hour++;
+				break;
+				case 2:
+					if (min==59) min=0;
+					else min++;
+				break;
+				case 3:
+					if (sec==59) sec=0;
+					else sec++;
+				break;
+				case 4:
+					ok=1;
+				break;
+			}
+
+        }
+   }
+
+   if (get_key_status(SELECT_MINUS_BTN))
+   {
+		if (!get_prev_key_status(SELECT_MINUS_BTN))
+        {
+                switch (i)
+                {
+                        case 0: if (wd==6) wd=0;
+                                else wd++;
+                                break;
+                        case 1: if (hour==0) hour=23;
+                                else hour--;
+                                break;
+                        case 2: if (min==0) min=59;
+                                else min--;
+                                break;
+                        case 3: if (sec==0) sec=59;
+                                else sec--;
+                                break;
+                        case 4: ok=1;
+                                break;
+                }
+
+         }
+     }
+
+     if(get_key_status(MENU_ENTER_BTN))
+     {
+       if(!get_prev_key_status(MENU_ENTER_BTN))
+       {
+          LCDGotoXY(x,1);
+          LCDstring("  ");
+          if (i == 4)
+          {
+             i = 0;
+             x = 0;
+          }
+          else
+          {
+            if (i == 0) x += 4;
+            else x += 3;
+            i++;
+          }
+
+         }
+       }
+
+         if(get_key_status(EXIT_BTN))
+         {
+                if(!get_prev_key_status(EXIT_BTN))
+                {
+                        PREV_BTN_PIN=BTN_PIN;
+                        return;
+                }
+         }
+
+ }
+ rtc_set_time(hour,min,sec,wd+1);
+}
+
+
+void set_units_format(void)
+{
+ unsigned char i = 0, x = 0, j = 0;
+ char ok = 0;
+ //char *items[]={"","hh","mm","ss","^^"};
+ char *units[][2] = { {"C", "F"}, {"kPa", "mmHg"} };
+ char *controls[] ={"<-", "ok"};
+ //char x_pos[2] = {7, 11};
+ 
+ LCDclr();
+ LCDGotoXY(0,0);
+ LCDstring("Temp: ");
+ LCDsendChar(0xdf);
+ LCDstring(units[0][0]);
+ LCDGotoXY(0,1);
+ LCDstring("Press: ");
+ LCDstring(units[1][0]);
+
+ while(!ok)
+ {
+   PREV_BTN_PIN = BTN_PIN;
+   //LCDGotoXY(x_pos[i],i);
+   LCDGotoXY(7,i);
+   LCDstring(units[i][j]);
+   LCDGotoXY(12,i);
+   LCDstring(controls[i]);
+   if(get_key_status(SELECT_PLUS_BTN))
+   {
+		if (!get_prev_key_status(SELECT_PLUS_BTN))
+		{
+			if (i < 2)
+			  if (j == 0) j++;
+			  else j = 0;
+			else
+			  ok = 1;		
+		}
+
+    }
+   
+
+   if (get_key_status(SELECT_MINUS_BTN))
+   {
+		if (!get_prev_key_status(SELECT_MINUS_BTN))
+        {
+            if (i < 2)
+			  if (j == 1) j--;
+			  else j = 0;
+			else
+			  ok = 1;
+
+         }
+     }
+
+     if(get_key_status(MENU_ENTER_BTN))
+     {
+       if(!get_prev_key_status(MENU_ENTER_BTN))
+       {
+          LCDGotoXY(8, i);
+          LCDstring("  ");
+          if (i == 1)
+            i = 0;
+          else
+          {
+            //if (i == 0) x += 4;
+            //else x += 3;
+            i++;
+          }
+
+         }
+       }
+
+         if(get_key_status(EXIT_BTN))
+         {
+                if(!get_prev_key_status(EXIT_BTN))
+                {
+                        PREV_BTN_PIN=BTN_PIN;
+                        return;
+                }
+         }
+
+ }
+ //rtc_set_time(hour,min,sec,wd+1);
+}
+
+
+void main_menu(void)
+{
+  char *menu_items[] = {"      Time      ", "      Date      ", 
+  "   Alarm Clock  ", "   Time Format  ", "Units of Measure", /*"Units Conversion",*/ /*"  Output Units  ",*/ 
+  "      Exit      "};
+  char menu_title[] = "< Main Menu >"; // Units Conversion
+  unsigned char selected = 0;
+
+  while(1)
+  {
+    PREV_BTN_PIN = BTN_PIN;
+    LCDGotoXY(2,0);
+    LCDstring(menu_title);
+    LCDGotoXY(0,1);
+    LCDstring(menu_items[selected]);
+    if(get_key_status(SELECT_PLUS_BTN))
+    {
+      if(!get_prev_key_status(SELECT_PLUS_BTN))
+        if(selected == 5) selected = 0;
+        else selected++;
+    }
+
+    if(get_key_status(SELECT_MINUS_BTN))
+    {
+      if (!get_prev_key_status(SELECT_MINUS_BTN))
+        if (selected == 0) selected = 5;
+        else selected--;
+    }
+
+    if(get_key_status(MENU_ENTER_BTN))
+		if(!get_prev_key_status(MENU_ENTER_BTN))
+		{
+			switch(selected)
+			{
+				case 0: set_time(); break;
+				case 1: set_date(); break;
+				case 2: break;
+				case 3: break;
+				case 4: set_units_format(); break;
+				case 5: return;
+				default: break;
+			}
+        LCDclr();
+      }
+
+    if (get_key_status(EXIT_BTN))
+    {
+     if (!get_prev_key_status(EXIT_BTN))
+     {
+       PREV_BTN_PIN=BTN_PIN;
+       return;
+     }
+    }
+  }
+}
+
+
+const uint8_t termometru[8] = //icon for termometer
+{
+    4, //B00100,
+    10, //B01010,
+    10, //B01010,
+    14, //B01110,
+    14, //B01110,
+    31, //B11111,
+    31, //B11111,
+    14, //B01110
+};
+
+
+int main(void)
+{
+  
+  float t=0;
+  unsigned int vin, pressure_kPa, pressure_mmHg;
+  
+  DDRB|=(1<<PORTB1);
+TCCR1A=0xA1; 
+OCR1A=128;
+TCCR1B=0x05;
+  
+
+ /* Ініціалізація кнопок */
+  BTN_DDR&=~(1<<MENU_ENTER_BTN)&~(1<<SELECT_PLUS_BTN)&~(1<<SELECT_MINUS_BTN)&~(1<<EXIT_BTN);
+  BTN_PORT|=(1<<MENU_ENTER_BTN)|(1<<SELECT_PLUS_BTN)|(1<<SELECT_MINUS_BTN)|(1<<EXIT_BTN);	
+	
+  initADC();
+  
+  i2c_init();		
+  rtc_init(0,1,0);  
+  therm_init(-55, 125, THERM_9BIT_RES);  
+  
+  /* Ініціалізація LCD */
+  LCDinit();
+  LCDcursorOFF();
+  //LCDdefinechar(termometru, 1);//write char to LCD CGRAM
+  
+  LCDstring("Multifunction\nAlarm Clock");
+  _delay_ms(2000);
+  LCDclr();	
+  LCDstring("(C) 2018\nIhor Levkovych");
+  _delay_ms(2000);
+  LCDclr();	
+ 			
+ 
+  while(1)
+  { 
+    vin = readADC(3); //measure pressure ADC3 pin
+    pressure_kPa = press_m(vin); //calculate pressure
+	pressure_mmHg = 7.50061683 * pressure_kPa;
+	therm_read_temperature(&t); //measure temperature from DS18B20
+    rtc_get_time(&hour,&min,&sec, &wd);
+	rtc_get_date(&date,&month,&year);
+	rtc_get_time(&hour, &min, &sec, &wd);
+    rtc_get_date(&date, &month, &year);
+    sprintf(lcd_buffer, "%u%u:%u%u %u%u.%u%u.%u%u", hour/10,hour%10, min/10,min%10, 
+			date/10,date%10, month/10,month%10, year/10,year%10);
+    LCDGotoXY(0,0);    
+	LCDstring(lcd_buffer);
+	
+	sprintf(lcd_buffer,"%+.1f%cC %ummHg ", t, 0xdf, (unsigned int) pressure_mmHg);
+	LCDGotoXY(0,1);
+    LCDstring(lcd_buffer);
+	
+	   if (get_key_status(MENU_ENTER_BTN))
+       if (!get_prev_key_status(MENU_ENTER_BTN))
+       {
+         LCDclr();
+         main_menu();
+         LCDclr();
+       }
+
+       PREV_BTN_PIN=BTN_PIN;
+	  			
+	  
+    }
+	
+	
+  
+  return 0;
+}
