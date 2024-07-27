@@ -1,0 +1,52 @@
+CodeVisionAVR C Compiler V1.25.8 Professional
+(C) Copyright 1998-2007 Pavel Haiduc, HP InfoTech s.r.l.
+http://www.hpinfotech.com
+
+File: E:\100_today!_new!\2_Diplom_2019_RGB!\2_DOC_Diplom_2019\14_RGB_PWM_ver1_ok_prj\6_proekt_eeprom_new!\ovf.c
+Global variables memory map:
+
+Variable                          Address   Size
+k                                                                       R5      1
+PREV_PINF                                                               R4      1
+gSelectPlusCounter                                                   R6,R7      2
+gSelectMinusCounter                                                  R8,R9      2
+hour                                                                  500h      2
+start_p                                                               502h      2
+buffer                                                                504h     33
+N                                                                      R11      1
+fx                                                                    525h      4
+tx                                                                    529h      4
+fxx                                                                   52Dh      4
+redpwml                                                               531h      1
+redpwmh                                                               532h      1
+greenpwml                                                             533h      1
+greenpwmh                                                             534h      1
+bluepwml                                                              535h      1
+bluepwmh                                                              536h      1
+ICR3top                                                               537h      2
+speed                                                                 539h      2
+ICR3                                                               R12,R13      2
+RedPwm                                                                53Bh      2
+GreenPwm                                                              53Dh      2
+BluePwm                                                               53Fh      2
+Dred                                                                  541h      2
+Dgreen                                                                543h      2
+Dblue                                                                 545h      2
+adc_in                                                                547h      2
+indication                                                            549h      4
+tinf                                                                  54Dh      4
+ADC_INPUT                                                              R10      1
+vref                                                                  551h      1
+od                                                                    552h      1
+value                                                                 553h      5
+A0                                                                    558h      2
+A1                                                                    55Ah      2
+A2                                                                    55Ch      2
+A3                                                                    55Eh      2
+A4                                                                    560h      2
+V0                                                                    562h      2
+V1                                                                    564h      2
+V2                                                                    566h      2
+V3                                                                    568h      2
+V4                                                                    56Ah      2
+*p_S62                                                                56Ch      2

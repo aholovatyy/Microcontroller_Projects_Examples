@@ -1,0 +1,26 @@
+RAM Allocation
+Variable                                                          Address   Size
+--------------------------------------------------------------------------------
+temp                                                              02DEh        4
+hum                                                               02E2h        4
+soil                                                              02E6h        4
+light                                                             02EAh        4
+w_time                                                            02EEh       24
+lcd_buffer                                                        0306h       33
+__ds18b20_scratch_pad                                             0327h        9
+_seed                                                             0330h        4
+_base_y                                                           0334h        4
+code_rus                                                          0338h       66
+code_byte_lcd                                                     037Ah       66
+
+EEPROM Allocation
+Variable                                                          Address   Size
+--------------------------------------------------------------------------------
+
+Register Allocation
+Variable                                                          Register  Size
+--------------------------------------------------------------------------------
+PREV_BTN_PIN                                                      R5           1
+_lcd_x                                                            R4           1
+_lcd_y                                                            R7           1
+_lcd_maxx                                                         R6           1

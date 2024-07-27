@@ -1,0 +1,262 @@
+   1               		.file	"eeprom_demo.c"
+   2               	__SREG__ = 0x3f
+   3               	__SP_H__ = 0x3e
+   4               	__SP_L__ = 0x3d
+   5               	__CCP__  = 0x34
+   6               	__tmp_reg__ = 0
+   7               	__zero_reg__ = 1
+  15               	.Ltext0:
+  16               		.data
+  17               	.LC0:
+  18 0000 4545 5052 		.string	"EEPROM Demo\n24LC256"
+  18      4F4D 2044 
+  18      656D 6F0A 
+  18      3234 4C43 
+  18      3235 3600 
+  19               	.LC1:
+  20 0014 5265 6164 		.string	"Reading 24LC256"
+  20      696E 6720 
+  20      3234 4C43 
+  20      3235 3600 
+  21               	.LC2:
+  22 0024 6164 6472 		.string	"address: 0x%X\ndata: %u "
+  22      6573 733A 
+  22      2030 7825 
+  22      580A 6461 
+  22      7461 3A20 
+  23               		.text
+  24               	.global	main
+  26               	main:
+  27               	.LFB7:
+  28               	.LM1:
+  29 0000 8F92      		push r8
+  30 0002 9F92      		push r9
+  31 0004 AF92      		push r10
+  32 0006 BF92      		push r11
+  33 0008 CF92      		push r12
+  34 000a DF92      		push r13
+  35 000c EF92      		push r14
+  36 000e FF92      		push r15
+  37 0010 1F93      		push r17
+  38 0012 DF93      		push r29
+  39 0014 CF93      		push r28
+  40 0016 CDB7      		in r28,__SP_L__
+  41 0018 DEB7      		in r29,__SP_H__
+  42 001a A197      		sbiw r28,33
+  43 001c 0FB6      		in __tmp_reg__,__SREG__
+  44 001e F894      		cli
+  45 0020 DEBF      		out __SP_H__,r29
+  46 0022 0FBE      		out __SREG__,__tmp_reg__
+  47 0024 CDBF      		out __SP_L__,r28
+  48               	/* prologue: function */
+  49               	/* frame size = 33 */
+  50               	.LM2:
+  51 0026 0E94 0000 		call i2c_init
+  52               	.LM3:
+  53 002a 0E94 0000 		call LCDinit
+  54               	.LM4:
+  55 002e 0E94 0000 		call LCDcursorOFF
+  56               	.LM5:
+  57 0032 0E94 0000 		call LCDclr
+  58               	.LM6:
+  59 0036 80E0      		ldi r24,lo8(.LC0)
+  60 0038 90E0      		ldi r25,hi8(.LC0)
+  61 003a 0E94 0000 		call LCDstring
+  62 003e 80E1      		ldi r24,lo8(10000)
+  63 0040 97E2      		ldi r25,hi8(10000)
+  64               	.LVL0:
+  65               	.LBB24:
+  66               	.LBB25:
+  67               	.LBB26:
+  68               	.LBB27:
+  69               	.LM7:
+  70 0042 20E9      		ldi r18,lo8(400)
+  71 0044 31E0      		ldi r19,hi8(400)
+  72               	.L2:
+  73 0046 F901      		movw r30,r18
+  74               	.LVL1:
+  75               	/* #APP */
+  76               	 ;  105 "c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h" 1
+  77 0048 3197      		1: sbiw r30,1
+  78 004a 01F4      		brne 1b
+  79               	 ;  0 "" 2
+  80               	/* #NOAPP */
+  81               	.LBE27:
+  82               	.LBE26:
+  83               	.LM8:
+  84 004c 0197      		sbiw r24,1
+  85               	.LM9:
+  86 004e 01F4      		brne .L2
+  87               	.LBE25:
+  88               	.LBE24:
+  89               	.LM10:
+  90 0050 0E94 0000 		call LCDclr
+  91               	.LVL2:
+  92               	.LM11:
+  93 0054 80E0      		ldi r24,lo8(0)
+  94 0056 60E0      		ldi r22,lo8(0)
+  95 0058 0E94 0000 		call LCDGotoXY
+  96               	.LM12:
+  97 005c 80E0      		ldi r24,lo8(.LC1)
+  98 005e 90E0      		ldi r25,hi8(.LC1)
+  99 0060 0E94 0000 		call LCDstring
+ 100 0064 80E1      		ldi r24,lo8(10000)
+ 101 0066 97E2      		ldi r25,hi8(10000)
+ 102               	.LVL3:
+ 103               	.LBB28:
+ 104               	.LBB29:
+ 105               	.LBB30:
+ 106               	.LBB31:
+ 107               	.LM13:
+ 108 0068 20E9      		ldi r18,lo8(400)
+ 109 006a 31E0      		ldi r19,hi8(400)
+ 110               	.L3:
+ 111 006c F901      		movw r30,r18
+ 112               	.LVL4:
+ 113               	/* #APP */
+ 114               	 ;  105 "c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h" 1
+ 115 006e 3197      		1: sbiw r30,1
+ 116 0070 01F4      		brne 1b
+ 117               	 ;  0 "" 2
+ 118               	/* #NOAPP */
+ 119               	.LBE31:
+ 120               	.LBE30:
+ 121               	.LM14:
+ 122 0072 0197      		sbiw r24,1
+ 123               	.LM15:
+ 124 0074 01F4      		brne .L3
+ 125               	.LBE29:
+ 126               	.LBE28:
+ 127               	.LM16:
+ 128 0076 0E94 0000 		call LCDclr
+ 129               	.LVL5:
+ 130 007a EE24      		clr r14
+ 131 007c FF24      		clr r15
+ 132               	.LVL6:
+ 133               	.LM17:
+ 134 007e 6E01      		movw r12,r28
+ 135 0080 0894      		sec
+ 136 0082 C11C      		adc r12,__zero_reg__
+ 137 0084 D11C      		adc r13,__zero_reg__
+ 138 0086 90E0      		ldi r25,lo8(.LC2)
+ 139 0088 892E      		mov r8,r25
+ 140 008a 90E0      		ldi r25,hi8(.LC2)
+ 141 008c 992E      		mov r9,r25
+ 142               	.LBB32:
+ 143               	.LBB33:
+ 144               	.LBB34:
+ 145               	.LBB35:
+ 146               	.LM18:
+ 147 008e 80E9      		ldi r24,lo8(400)
+ 148 0090 A82E      		mov r10,r24
+ 149 0092 81E0      		ldi r24,hi8(400)
+ 150 0094 B82E      		mov r11,r24
+ 151 0096 00C0      		rjmp .L4
+ 152               	.LVL7:
+ 153               	.L6:
+ 154               	.LBE35:
+ 155               	.LBE34:
+ 156               	.LBE33:
+ 157               	.LBE32:
+ 158               	.LM19:
+ 159 0098 C701      		movw r24,r14
+ 160               	.LVL8:
+ 161 009a 0E94 0000 		call read_ext_eeprom
+ 162               	.LVL9:
+ 163 009e 182F      		mov r17,r24
+ 164               	.LM20:
+ 165 00a0 80E0      		ldi r24,lo8(0)
+ 166 00a2 60E0      		ldi r22,lo8(0)
+ 167 00a4 0E94 0000 		call LCDGotoXY
+ 168               	.LM21:
+ 169 00a8 8DB7      		in r24,__SP_L__
+ 170 00aa 9EB7      		in r25,__SP_H__
+ 171 00ac 0897      		sbiw r24,8
+ 172 00ae 0FB6      		in __tmp_reg__,__SREG__
+ 173 00b0 F894      		cli
+ 174 00b2 9EBF      		out __SP_H__,r25
+ 175 00b4 0FBE      		out __SREG__,__tmp_reg__
+ 176 00b6 8DBF      		out __SP_L__,r24
+ 177 00b8 EDB7      		in r30,__SP_L__
+ 178 00ba FEB7      		in r31,__SP_H__
+ 179 00bc 3196      		adiw r30,1
+ 180 00be ADB7      		in r26,__SP_L__
+ 181 00c0 BEB7      		in r27,__SP_H__
+ 182 00c2 1296      		adiw r26,1+1
+ 183 00c4 DC92      		st X,r13
+ 184 00c6 CE92      		st -X,r12
+ 185 00c8 1197      		sbiw r26,1
+ 186 00ca 9382      		std Z+3,r9
+ 187 00cc 8282      		std Z+2,r8
+ 188 00ce F582      		std Z+5,r15
+ 189 00d0 E482      		std Z+4,r14
+ 190 00d2 1683      		std Z+6,r17
+ 191 00d4 1782      		std Z+7,__zero_reg__
+ 192 00d6 0E94 0000 		call sprintf
+ 193               	.LM22:
+ 194 00da 8DB7      		in r24,__SP_L__
+ 195 00dc 9EB7      		in r25,__SP_H__
+ 196 00de 0896      		adiw r24,8
+ 197 00e0 0FB6      		in __tmp_reg__,__SREG__
+ 198 00e2 F894      		cli
+ 199 00e4 9EBF      		out __SP_H__,r25
+ 200 00e6 0FBE      		out __SREG__,__tmp_reg__
+ 201 00e8 8DBF      		out __SP_L__,r24
+ 202 00ea C601      		movw r24,r12
+ 203 00ec 0E94 0000 		call LCDstring
+ 204 00f0 88EE      		ldi r24,lo8(1000)
+ 205 00f2 93E0      		ldi r25,hi8(1000)
+ 206               	.LVL10:
+ 207               	.L5:
+ 208               	.LBB39:
+ 209               	.LBB38:
+ 210               	.LBB37:
+ 211               	.LBB36:
+ 212               	.LM23:
+ 213 00f4 F501      		movw r30,r10
+ 214               	.LVL11:
+ 215               	/* #APP */
+ 216               	 ;  105 "c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h" 1
+ 217 00f6 3197      		1: sbiw r30,1
+ 218 00f8 01F4      		brne 1b
+ 219               	 ;  0 "" 2
+ 220               	/* #NOAPP */
+ 221               	.LBE36:
+ 222               	.LBE37:
+ 223               	.LM24:
+ 224 00fa 0197      		sbiw r24,1
+ 225               	.LM25:
+ 226 00fc 01F4      		brne .L5
+ 227               	.LBE38:
+ 228               	.LBE39:
+ 229               	.LM26:
+ 230 00fe 0894      		sec
+ 231 0100 E11C      		adc r14,__zero_reg__
+ 232 0102 F11C      		adc r15,__zero_reg__
+ 233               	.L4:
+ 234 0104 F7FE      		sbrs r15,7
+ 235 0106 00C0      		rjmp .L6
+ 236               	.L12:
+ 237 0108 00C0      		rjmp .L12
+ 238               	.LFE7:
+ 264               	.Letext0:
+DEFINED SYMBOLS
+                            *ABS*:00000000 eeprom_demo.c
+C:\DOCUME~1\ADMINI~1\LOCALS~1\Temp/ccRZgZPd.s:2      *ABS*:0000003f __SREG__
+C:\DOCUME~1\ADMINI~1\LOCALS~1\Temp/ccRZgZPd.s:3      *ABS*:0000003e __SP_H__
+C:\DOCUME~1\ADMINI~1\LOCALS~1\Temp/ccRZgZPd.s:4      *ABS*:0000003d __SP_L__
+C:\DOCUME~1\ADMINI~1\LOCALS~1\Temp/ccRZgZPd.s:5      *ABS*:00000034 __CCP__
+C:\DOCUME~1\ADMINI~1\LOCALS~1\Temp/ccRZgZPd.s:6      *ABS*:00000000 __tmp_reg__
+C:\DOCUME~1\ADMINI~1\LOCALS~1\Temp/ccRZgZPd.s:7      *ABS*:00000001 __zero_reg__
+C:\DOCUME~1\ADMINI~1\LOCALS~1\Temp/ccRZgZPd.s:26     .text:00000000 main
+
+UNDEFINED SYMBOLS
+i2c_init
+LCDinit
+LCDcursorOFF
+LCDclr
+LCDstring
+LCDGotoXY
+read_ext_eeprom
+sprintf
+__do_copy_data

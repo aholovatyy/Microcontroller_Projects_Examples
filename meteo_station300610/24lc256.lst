@@ -1,0 +1,467 @@
+   1               		.file	"24lc256.c"
+   2               	__SREG__ = 0x3f
+   3               	__SP_H__ = 0x3e
+   4               	__SP_L__ = 0x3d
+   5               	__CCP__  = 0x34
+   6               	__tmp_reg__ = 0
+   7               	__zero_reg__ = 1
+  15               	.Ltext0:
+  16               	.global	read_ext_eeprom
+  18               	read_ext_eeprom:
+  19               	.LFB7:
+  20               	.LM1:
+  21               	.LVL0:
+  22 0000 0F93      		push r16
+  23 0002 1F93      		push r17
+  24               	/* prologue: function */
+  25               	/* frame size = 0 */
+  26 0004 8C01      		movw r16,r24
+  27               	.LVL1:
+  28               	.LM2:
+  29 0006 80EA      		ldi r24,lo8(-96)
+  30 0008 0E94 0000 		call i2c_start
+  31               	.LM3:
+  32 000c 812F      		mov r24,r17
+  33               	.LVL2:
+  34 000e 0E94 0000 		call i2c_write
+  35               	.LM4:
+  36 0012 802F      		mov r24,r16
+  37               	.LVL3:
+  38 0014 0E94 0000 		call i2c_write
+  39               	.LM5:
+  40 0018 81EA      		ldi r24,lo8(-95)
+  41 001a 0E94 0000 		call i2c_start
+  42               	.LM6:
+  43 001e 80E0      		ldi r24,lo8(0)
+  44 0020 0E94 0000 		call i2c_read
+  45 0024 182F      		mov r17,r24
+  46               	.LVL4:
+  47               	.LM7:
+  48 0026 0E94 0000 		call i2c_stop
+  49               	.LM8:
+  50 002a 812F      		mov r24,r17
+  51               	/* epilogue start */
+  52 002c 1F91      		pop r17
+  53               	.LVL5:
+  54 002e 0F91      		pop r16
+  55               	.LVL6:
+  56 0030 0895      		ret
+  57               	.LFE7:
+  59               	.global	read_float_ext_eeprom
+  61               	read_float_ext_eeprom:
+  62               	.LFB9:
+  63               	.LM9:
+  64               	.LVL7:
+  65 0032 CF92      		push r12
+  66 0034 DF92      		push r13
+  67 0036 EF92      		push r14
+  68 0038 FF92      		push r15
+  69 003a 0F93      		push r16
+  70 003c 1F93      		push r17
+  71 003e DF93      		push r29
+  72 0040 CF93      		push r28
+  73 0042 00D0      		rcall .
+  74 0044 00D0      		rcall .
+  75 0046 CDB7      		in r28,__SP_L__
+  76 0048 DEB7      		in r29,__SP_H__
+  77               	/* prologue: function */
+  78               	/* frame size = 4 */
+  79               	.LM10:
+  80 004a 7B01      		movw r14,r22
+  81 004c 8E01      		movw r16,r28
+  82 004e 0F5F      		subi r16,lo8(-(1))
+  83 0050 1F4F      		sbci r17,hi8(-(1))
+  84               	.LM11:
+  85 0052 81E1      		ldi r24,lo8(17)
+  86 0054 C82E      		mov r12,r24
+  87 0056 D12C      		mov r13,__zero_reg__
+  88 0058 CC0E      		add r12,r28
+  89 005a DD1E      		adc r13,r29
+  90               	.L4:
+  91               	.LM12:
+  92 005c C701      		movw r24,r14
+  93 005e 0E94 0000 		call read_ext_eeprom
+  94               	.LVL8:
+  95 0062 90E0      		ldi r25,lo8(0)
+  96 0064 A0E0      		ldi r26,lo8(0)
+  97 0066 B0E0      		ldi r27,hi8(0)
+  98 0068 BC01      		movw r22,r24
+  99 006a CD01      		movw r24,r26
+ 100 006c 0E94 0000 		call __floatunsisf
+ 101 0070 F801      		movw r30,r16
+ 102 0072 6193      		st Z+,r22
+ 103 0074 7193      		st Z+,r23
+ 104 0076 8193      		st Z+,r24
+ 105 0078 9193      		st Z+,r25
+ 106 007a 8F01      		movw r16,r30
+ 107 007c 0894      		sec
+ 108 007e E11C      		adc r14,__zero_reg__
+ 109 0080 F11C      		adc r15,__zero_reg__
+ 110               	.LM13:
+ 111 0082 EC15      		cp r30,r12
+ 112 0084 FD05      		cpc r31,r13
+ 113 0086 01F4      		brne .L4
+ 114               	.LM14:
+ 115 0088 2981      		ldd r18,Y+1
+ 116               	.LVL9:
+ 117 008a 3A81      		ldd r19,Y+2
+ 118               	.LVL10:
+ 119 008c 4B81      		ldd r20,Y+3
+ 120               	.LVL11:
+ 121 008e 5C81      		ldd r21,Y+4
+ 122               	.LVL12:
+ 123 0090 B901      		movw r22,r18
+ 124 0092 CA01      		movw r24,r20
+ 125               	/* epilogue start */
+ 126 0094 0F90      		pop __tmp_reg__
+ 127 0096 0F90      		pop __tmp_reg__
+ 128 0098 0F90      		pop __tmp_reg__
+ 129 009a 0F90      		pop __tmp_reg__
+ 130 009c CF91      		pop r28
+ 131 009e DF91      		pop r29
+ 132 00a0 1F91      		pop r17
+ 133 00a2 0F91      		pop r16
+ 134 00a4 FF90      		pop r15
+ 135 00a6 EF90      		pop r14
+ 136 00a8 DF90      		pop r13
+ 137 00aa CF90      		pop r12
+ 138 00ac 0895      		ret
+ 139               	.LFE9:
+ 141               	.global	write_ext_eeprom
+ 143               	write_ext_eeprom:
+ 144               	.LFB6:
+ 145               	.LM15:
+ 146               	.LVL13:
+ 147 00ae FF92      		push r15
+ 148 00b0 0F93      		push r16
+ 149 00b2 1F93      		push r17
+ 150               	/* prologue: function */
+ 151               	/* frame size = 0 */
+ 152 00b4 182F      		mov r17,r24
+ 153 00b6 092F      		mov r16,r25
+ 154               	.LVL14:
+ 155 00b8 F62E      		mov r15,r22
+ 156               	.LM16:
+ 157 00ba 80EA      		ldi r24,lo8(-96)
+ 158               	.LVL15:
+ 159 00bc 0E94 0000 		call i2c_start
+ 160               	.LVL16:
+ 161               	.LM17:
+ 162 00c0 802F      		mov r24,r16
+ 163 00c2 0E94 0000 		call i2c_write
+ 164               	.LM18:
+ 165 00c6 812F      		mov r24,r17
+ 166 00c8 0E94 0000 		call i2c_write
+ 167               	.LM19:
+ 168 00cc 8F2D      		mov r24,r15
+ 169 00ce 0E94 0000 		call i2c_write
+ 170               	.LBB40:
+ 171               	.LBB41:
+ 172               	.LBB42:
+ 173               	.LBB43:
+ 174               	.LM20:
+ 175 00d2 80E2      		ldi r24,lo8(20000)
+ 176 00d4 9EE4      		ldi r25,hi8(20000)
+ 177               	.LVL17:
+ 178               	/* #APP */
+ 179               	 ;  105 "c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h" 1
+ 180 00d6 0197      		1: sbiw r24,1
+ 181 00d8 01F4      		brne 1b
+ 182               	 ;  0 "" 2
+ 183               	/* #NOAPP */
+ 184               	.LBE43:
+ 185               	.LBE42:
+ 186               	.LBE41:
+ 187               	.LBE40:
+ 188               	.LM21:
+ 189 00da 0E94 0000 		call i2c_stop
+ 190               	.LVL18:
+ 191               	/* epilogue start */
+ 192               	.LM22:
+ 193 00de 1F91      		pop r17
+ 194               	.LVL19:
+ 195 00e0 0F91      		pop r16
+ 196               	.LVL20:
+ 197 00e2 FF90      		pop r15
+ 198               	.LVL21:
+ 199 00e4 0895      		ret
+ 200               	.LFE6:
+ 202               	.global	test_eeprom
+ 204               	test_eeprom:
+ 205               	.LFB10:
+ 206               	.LM23:
+ 207 00e6 CF92      		push r12
+ 208 00e8 DF92      		push r13
+ 209 00ea EF92      		push r14
+ 210 00ec FF92      		push r15
+ 211 00ee 0F93      		push r16
+ 212 00f0 1F93      		push r17
+ 213 00f2 DF93      		push r29
+ 214 00f4 CF93      		push r28
+ 215 00f6 00D0      		rcall .
+ 216 00f8 00D0      		rcall .
+ 217 00fa CDB7      		in r28,__SP_L__
+ 218 00fc DEB7      		in r29,__SP_H__
+ 219               	/* prologue: function */
+ 220               	/* frame size = 4 */
+ 221               	.LM24:
+ 222 00fe 81E0      		ldi r24,lo8(1)
+ 223 0100 8983      		std Y+1,r24
+ 224 0102 82E0      		ldi r24,lo8(2)
+ 225 0104 8A83      		std Y+2,r24
+ 226 0106 83E0      		ldi r24,lo8(3)
+ 227 0108 8B83      		std Y+3,r24
+ 228 010a 84E0      		ldi r24,lo8(4)
+ 229 010c 8C83      		std Y+4,r24
+ 230 010e 00E0      		ldi r16,lo8(0)
+ 231 0110 10E0      		ldi r17,hi8(0)
+ 232               	.LVL22:
+ 233               	.LM25:
+ 234 0112 6E01      		movw r12,r28
+ 235 0114 0894      		sec
+ 236 0116 C11C      		adc r12,__zero_reg__
+ 237 0118 D11C      		adc r13,__zero_reg__
+ 238               	.LBB44:
+ 239               	.LBB45:
+ 240               	.LBB46:
+ 241               	.LBB47:
+ 242               	.LM26:
+ 243 011a 22E0      		ldi r18,lo8(2)
+ 244 011c E22E      		mov r14,r18
+ 245               	.L10:
+ 246               	.LBE47:
+ 247               	.LBE46:
+ 248               	.LBE45:
+ 249               	.LBE44:
+ 250               	.LM27:
+ 251 011e F601      		movw r30,r12
+ 252 0120 E00F      		add r30,r16
+ 253 0122 F11F      		adc r31,r17
+ 254 0124 C801      		movw r24,r16
+ 255 0126 6081      		ld r22,Z
+ 256 0128 0E94 0000 		call write_ext_eeprom
+ 257               	.LBB51:
+ 258               	.LBB50:
+ 259               	.LBB49:
+ 260               	.LBB48:
+ 261               	.LM28:
+ 262 012c 92E0      		ldi r25,lo8(2)
+ 263 012e F92E      		mov r15,r25
+ 264 0130 8E2D      		mov r24,r14
+ 265               	.LVL23:
+ 266               	/* #APP */
+ 267               	 ;  83 "c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h" 1
+ 268 0132 8A95      		1: dec r24
+ 269 0134 01F4      		brne 1b
+ 270               	 ;  0 "" 2
+ 271               	/* #NOAPP */
+ 272               	.LBE48:
+ 273               	.LBE49:
+ 274               	.LBE50:
+ 275               	.LBE51:
+ 276               	.LM29:
+ 277 0136 0F5F      		subi r16,lo8(-(1))
+ 278 0138 1F4F      		sbci r17,hi8(-(1))
+ 279 013a 0430      		cpi r16,4
+ 280 013c 1105      		cpc r17,__zero_reg__
+ 281 013e 01F4      		brne .L10
+ 282               	.LM30:
+ 283 0140 80E0      		ldi r24,lo8(0)
+ 284 0142 90E0      		ldi r25,hi8(0)
+ 285               	.LVL24:
+ 286 0144 0E94 0000 		call read_ext_eeprom
+ 287               	.LBB52:
+ 288               	.LBB54:
+ 289               	.LBB56:
+ 290               	.LBB58:
+ 291               	.LM31:
+ 292 0148 8F2D      		mov r24,r15
+ 293               	.LVL25:
+ 294               	/* #APP */
+ 295               	 ;  83 "c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h" 1
+ 296 014a 8A95      		1: dec r24
+ 297 014c 01F4      		brne 1b
+ 298               	 ;  0 "" 2
+ 299               	/* #NOAPP */
+ 300               	.LBE58:
+ 301               	.LBE56:
+ 302               	.LBE54:
+ 303               	.LBE52:
+ 304               	.LM32:
+ 305 014e 81E0      		ldi r24,lo8(1)
+ 306 0150 90E0      		ldi r25,hi8(1)
+ 307               	.LVL26:
+ 308 0152 0E94 0000 		call read_ext_eeprom
+ 309               	.LBB65:
+ 310               	.LBB63:
+ 311               	.LBB61:
+ 312               	.LBB59:
+ 313               	.LM33:
+ 314 0156 8F2D      		mov r24,r15
+ 315               	.LVL27:
+ 316               	/* #APP */
+ 317               	 ;  83 "c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h" 1
+ 318 0158 8A95      		1: dec r24
+ 319 015a 01F4      		brne 1b
+ 320               	 ;  0 "" 2
+ 321               	/* #NOAPP */
+ 322               	.LBE59:
+ 323               	.LBE61:
+ 324               	.LBE63:
+ 325               	.LBE65:
+ 326               	.LM34:
+ 327 015c 82E0      		ldi r24,lo8(2)
+ 328 015e 90E0      		ldi r25,hi8(2)
+ 329               	.LVL28:
+ 330 0160 0E94 0000 		call read_ext_eeprom
+ 331               	.LBB66:
+ 332               	.LBB53:
+ 333               	.LBB55:
+ 334               	.LBB57:
+ 335               	.LM35:
+ 336 0164 8F2D      		mov r24,r15
+ 337               	.LVL29:
+ 338               	/* #APP */
+ 339               	 ;  83 "c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h" 1
+ 340 0166 8A95      		1: dec r24
+ 341 0168 01F4      		brne 1b
+ 342               	 ;  0 "" 2
+ 343               	/* #NOAPP */
+ 344               	.LBE57:
+ 345               	.LBE55:
+ 346               	.LBE53:
+ 347               	.LBE66:
+ 348               	.LM36:
+ 349 016a 83E0      		ldi r24,lo8(3)
+ 350 016c 90E0      		ldi r25,hi8(3)
+ 351               	.LVL30:
+ 352 016e 0E94 0000 		call read_ext_eeprom
+ 353               	.LBB67:
+ 354               	.LBB64:
+ 355               	.LBB62:
+ 356               	.LBB60:
+ 357               	.LM37:
+ 358 0172 9F2D      		mov r25,r15
+ 359               	.LVL31:
+ 360               	/* #APP */
+ 361               	 ;  83 "c:/winavr-20100110/lib/gcc/../../avr/include/util/delay_basic.h" 1
+ 362 0174 9A95      		1: dec r25
+ 363 0176 01F4      		brne 1b
+ 364               	 ;  0 "" 2
+ 365               	/* epilogue start */
+ 366               	/* #NOAPP */
+ 367               	.LBE60:
+ 368               	.LBE62:
+ 369               	.LBE64:
+ 370               	.LBE67:
+ 371               	.LM38:
+ 372 0178 0F90      		pop __tmp_reg__
+ 373 017a 0F90      		pop __tmp_reg__
+ 374 017c 0F90      		pop __tmp_reg__
+ 375 017e 0F90      		pop __tmp_reg__
+ 376 0180 CF91      		pop r28
+ 377 0182 DF91      		pop r29
+ 378 0184 1F91      		pop r17
+ 379 0186 0F91      		pop r16
+ 380               	.LVL32:
+ 381 0188 FF90      		pop r15
+ 382 018a EF90      		pop r14
+ 383 018c DF90      		pop r13
+ 384 018e CF90      		pop r12
+ 385 0190 0895      		ret
+ 386               	.LFE10:
+ 388               	.global	write_float_ext_eeprom
+ 390               	write_float_ext_eeprom:
+ 391               	.LFB8:
+ 392               	.LM39:
+ 393               	.LVL33:
+ 394 0192 CF92      		push r12
+ 395 0194 DF92      		push r13
+ 396 0196 EF92      		push r14
+ 397 0198 FF92      		push r15
+ 398 019a 0F93      		push r16
+ 399 019c 1F93      		push r17
+ 400 019e DF93      		push r29
+ 401 01a0 CF93      		push r28
+ 402 01a2 00D0      		rcall .
+ 403 01a4 00D0      		rcall .
+ 404 01a6 CDB7      		in r28,__SP_L__
+ 405 01a8 DEB7      		in r29,__SP_H__
+ 406               	/* prologue: function */
+ 407               	/* frame size = 4 */
+ 408 01aa 2983      		std Y+1,r18
+ 409 01ac 3A83      		std Y+2,r19
+ 410 01ae 4B83      		std Y+3,r20
+ 411 01b0 5C83      		std Y+4,r21
+ 412               	.LM40:
+ 413 01b2 7E01      		movw r14,r28
+ 414 01b4 0894      		sec
+ 415 01b6 E11C      		adc r14,__zero_reg__
+ 416 01b8 F11C      		adc r15,__zero_reg__
+ 417 01ba 8B01      		movw r16,r22
+ 418               	.LM41:
+ 419 01bc 31E1      		ldi r19,lo8(17)
+ 420 01be C32E      		mov r12,r19
+ 421 01c0 D12C      		mov r13,__zero_reg__
+ 422 01c2 CC0E      		add r12,r28
+ 423 01c4 DD1E      		adc r13,r29
+ 424               	.LVL34:
+ 425               	.L14:
+ 426               	.LM42:
+ 427 01c6 F701      		movw r30,r14
+ 428 01c8 6191      		ld r22,Z+
+ 429 01ca 7191      		ld r23,Z+
+ 430 01cc 8191      		ld r24,Z+
+ 431 01ce 9191      		ld r25,Z+
+ 432               	.LVL35:
+ 433 01d0 7F01      		movw r14,r30
+ 434 01d2 0E94 0000 		call __fixunssfsi
+ 435 01d6 9B01      		movw r18,r22
+ 436 01d8 AC01      		movw r20,r24
+ 437 01da C801      		movw r24,r16
+ 438 01dc 622F      		mov r22,r18
+ 439 01de 0E94 0000 		call write_ext_eeprom
+ 440 01e2 0F5F      		subi r16,lo8(-(1))
+ 441 01e4 1F4F      		sbci r17,hi8(-(1))
+ 442               	.LM43:
+ 443 01e6 EC14      		cp r14,r12
+ 444 01e8 FD04      		cpc r15,r13
+ 445 01ea 01F4      		brne .L14
+ 446               	/* epilogue start */
+ 447               	.LM44:
+ 448 01ec 0F90      		pop __tmp_reg__
+ 449 01ee 0F90      		pop __tmp_reg__
+ 450 01f0 0F90      		pop __tmp_reg__
+ 451 01f2 0F90      		pop __tmp_reg__
+ 452 01f4 CF91      		pop r28
+ 453 01f6 DF91      		pop r29
+ 454 01f8 1F91      		pop r17
+ 455 01fa 0F91      		pop r16
+ 456 01fc FF90      		pop r15
+ 457 01fe EF90      		pop r14
+ 458 0200 DF90      		pop r13
+ 459 0202 CF90      		pop r12
+ 460 0204 0895      		ret
+ 461               	.LFE8:
+ 519               	.Letext0:
+DEFINED SYMBOLS
+                            *ABS*:00000000 24lc256.c
+C:\DOCUME~1\ADMINI~1\LOCALS~1\Temp/ccUZXD5B.s:2      *ABS*:0000003f __SREG__
+C:\DOCUME~1\ADMINI~1\LOCALS~1\Temp/ccUZXD5B.s:3      *ABS*:0000003e __SP_H__
+C:\DOCUME~1\ADMINI~1\LOCALS~1\Temp/ccUZXD5B.s:4      *ABS*:0000003d __SP_L__
+C:\DOCUME~1\ADMINI~1\LOCALS~1\Temp/ccUZXD5B.s:5      *ABS*:00000034 __CCP__
+C:\DOCUME~1\ADMINI~1\LOCALS~1\Temp/ccUZXD5B.s:6      *ABS*:00000000 __tmp_reg__
+C:\DOCUME~1\ADMINI~1\LOCALS~1\Temp/ccUZXD5B.s:7      *ABS*:00000001 __zero_reg__
+C:\DOCUME~1\ADMINI~1\LOCALS~1\Temp/ccUZXD5B.s:18     .text:00000000 read_ext_eeprom
+C:\DOCUME~1\ADMINI~1\LOCALS~1\Temp/ccUZXD5B.s:61     .text:00000032 read_float_ext_eeprom
+C:\DOCUME~1\ADMINI~1\LOCALS~1\Temp/ccUZXD5B.s:143    .text:000000ae write_ext_eeprom
+C:\DOCUME~1\ADMINI~1\LOCALS~1\Temp/ccUZXD5B.s:204    .text:000000e6 test_eeprom
+C:\DOCUME~1\ADMINI~1\LOCALS~1\Temp/ccUZXD5B.s:390    .text:00000192 write_float_ext_eeprom
+
+UNDEFINED SYMBOLS
+i2c_start
+i2c_write
+i2c_read
+i2c_stop
+__floatunsisf
+__fixunssfsi

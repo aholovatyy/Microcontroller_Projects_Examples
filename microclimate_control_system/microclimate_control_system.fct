@@ -1,0 +1,8 @@
+main DSTACK_USAGE:39 DSTACK_LEVEL:39 FILE:"microclimate_control_system.c" LINE:564
+main_menu DSTACK_USAGE:49 DSTACK_LEVEL:88 FILE:"microclimate_control_system.c" LINE:500
+set_values DSTACK_USAGE:43 DSTACK_LEVEL:131 FILE:"microclimate_control_system.c" LINE:284
+sprintf DSTACK_USAGE:14 DSTACK_LEVEL:145 FILE:"C:\cvavr2\lib\stdio.lib" LINE:1402
+_print DSTACK_USAGE:94 DSTACK_LEVEL:239 FILE:"C:\cvavr2\lib\stdio.lib" LINE:1154
+_ftoe DSTACK_USAGE:16 DSTACK_LEVEL:255 FILE:"C:\cvavr2\lib\stdio.lib" LINE:1098
+floor DSTACK_USAGE:4 DSTACK_LEVEL:259 FILE:"C:\cvavr2\lib\math.lib" LINE:659
+ftrunc DSTACK_USAGE:4 DSTACK_LEVEL:263 FILE:"C:\cvavr2\lib\math.lib" LINE:544

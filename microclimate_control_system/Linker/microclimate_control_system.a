@@ -1,0 +1,2680 @@
+;/*****************************************************
+;This program was produced by the
+;CodeWizardAVR V2.04.4a Advanced
+;Automatic Program Generator
+;© Copyright 1998-2009 Pavel Haiduc, HP InfoTech s.r.l.
+;http://www.hpinfotech.com
+;
+;Project : ¿‚ÚÏ‡ÚËÁÓ‚‡Ì‡ ÒËÒÚÂÏ‡ ÏÓÌ≥ÚÓËÌ„Û Ú‡ ÛÔ‡‚Î≥ÌÌˇ Ï≥ÍÓÍÎ≥Ï‡ÚÓÏ
+;		  ‚ ÚÂÔÎË˜ÌËı „ÓÒÔÓ‰‡ÒÚ‚‡ı Ì‡ Ï≥ÍÓÍÓÌÚÓÎÂ≥ AVR ATmega32
+;Version : ƒËÔÎÓÏÌ‡ Ó·ÓÚ‡
+;Date    : 2017
+;Author  : (C) ÒÚÛ‰ÂÌÚ √‡Î‡ı ¿Ì‰≥È
+;
+;Chip type               : ATmega32
+;Program type            : Application
+;AVR Core Clock frequency: 8,000000 MHz
+;Memory model            : Small
+;External RAM size       : 0
+;Data Stack size         : 512
+;*****************************************************/
+;
+;#include <mega32.h>
+;PCODE: $00000000 VOL: 0
+	#ifndef __SLEEP_DEFINED__
+;PCODE: $00000001 VOL: 0
+	#define __SLEEP_DEFINED__
+;PCODE: $00000002 VOL: 0
+	.EQU __se_bit=0x80
+;PCODE: $00000003 VOL: 0
+	.EQU __sm_mask=0x70
+;PCODE: $00000004 VOL: 0
+	.EQU __sm_powerdown=0x20
+;PCODE: $00000005 VOL: 0
+	.EQU __sm_powersave=0x30
+;PCODE: $00000006 VOL: 0
+	.EQU __sm_standby=0x60
+;PCODE: $00000007 VOL: 0
+	.EQU __sm_ext_standby=0x70
+;PCODE: $00000008 VOL: 0
+	.EQU __sm_adc_noise_red=0x10
+;PCODE: $00000009 VOL: 0
+	.SET power_ctrl_reg=mcucr
+;PCODE: $0000000A VOL: 0
+	#endif
+;PCODE: $0000000B VOL: 0
+;PCODE: $0000000C VOL: 0
+;#include <stdio.h>
+;#include <stdlib.h>
+;#include <delay.h>
+;#include <lcd.h> // ÙÛÌÍˆ≥ø LCD
+;#include <i2c.h>           // ≥ÌÚÂÙÂÈÒ i2c - Bus functions
+;#include <ds1307.h>       // DS1307 Real Time Clock functions
+;#include "therm_ds18b20.h"
+;#include "shtxx.h"
+;
+;#asm
+;PCODE: $0000000D VOL: 0
+    .equ __lcd_port=0x12 // ÔÓÚ Ô≥ÍÎ˛˜ÂÌÌˇ LCD, PORTD
+;PCODE: $0000000E VOL: 0
+;PCODE: $0000000F VOL: 0
+; 0000 0022 #endasm
+;
+;#asm
+;PCODE: $00000010 VOL: 0
+   .equ __i2c_port=0x15 ;PORTC   // DS1317 Ì‡ ÔÓÚ≥ —
+;PCODE: $00000011 VOL: 0
+   .equ __sda_bit=1              // SDA - Ì‡ pin.1
+;PCODE: $00000012 VOL: 0
+   .equ __scl_bit=0              // SCL - Ì‡ pin.0
+;PCODE: $00000013 VOL: 0
+;PCODE: $00000014 VOL: 0
+; 0000 0028 #endasm
+;
+;#pragma rl+
+;
+;//buttons MENU/ENTER, SELECT+, SELECT-
+;#define BTN_PORT PORTB
+;#define BTN_PIN PINB
+;#define BTN_DDR DDRB
+;#define MENU_ENTER_BTN 0
+;#define SELECT_PLUS_BTN 1
+;#define SELECT_MINUS_BTN 2
+;#define EXIT_BTN 3
+;
+;//air-conditioner
+;#define REL1_PORT PORTC
+;#define REL1_DDR DDRC
+;#define REL1 5
+;
+;//water pump
+;#define REL2_PORT PORTC
+;#define REL2_DDR DDRC
+;#define REL2 6
+;
+;//artificial light source
+;#define REL3_PORT PORTC
+;#define REL3_DDR DDRC
+;#define REL3 7
+;
+;#define WATERING_TIME_NUMBER 8
+;
+;typedef struct {
+;   unsigned int min, max;
+;} values_range;
+;
+;typedef struct {
+;  unsigned char hour, min, mode_on_off;
+;} watering_time;
+;
+;values_range temp = {23, 27}, hum = {50, 60}, soil = {0, 0}, light = {0, 0};
+
+	.DSEG
+;watering_time w_time[WATERING_TIME_NUMBER] = {{0,0,0}, {0,0,0}, {0,0,0}, {0,0,0},
+;            {0,0,0}, {0,0,0}, {0,0,0}, {0,0,0}};
+;unsigned char PREV_BTN_PIN = 0xff;
+;char lcd_buffer[33];
+;
+;unsigned char get_key_status(unsigned char BTN_ID)
+; 0000 0055 {
+
+	.CSEG
+;PCODE: $00000015 VOL: 0
+;PCODE: $00000016 VOL: 0
+; 0000 0056     return (!(BTN_PIN&(1<<BTN_ID)));
+;	BTN_ID -> Y+0
+;PCODE: $00000017 VOL: 0
+;PCODE: $00000018 VOL: 0
+;PCODE: $00000019 VOL: 0
+;PCODE: $0000001A VOL: 0
+;PCODE: $0000001B VOL: 0
+;PCODE: $0000001C VOL: 0
+;PCODE: $0000001D VOL: 0
+;PCODE: $0000001E VOL: 0
+;PCODE: $0000001F VOL: 0
+; 0000 0057 }
+;PCODE: $00000020 VOL: 0
+;
+;unsigned char get_prev_key_status(unsigned char BTN_ID)
+; 0000 005A {
+;PCODE: $00000021 VOL: 0
+;PCODE: $00000022 VOL: 0
+; 0000 005B     return (!(PREV_BTN_PIN&(1<<BTN_ID)));
+;	BTN_ID -> Y+0
+;PCODE: $00000023 VOL: 0
+;PCODE: $00000024 VOL: 0
+;PCODE: $00000025 VOL: 0
+;PCODE: $00000026 VOL: 0
+;PCODE: $00000027 VOL: 0
+;PCODE: $00000028 VOL: 0
+;PCODE: $00000029 VOL: 0
+; 0000 005C }
+;PCODE: $0000002A VOL: 0
+;
+;void set_time()
+; 0000 005F {
+;PCODE: $0000002B VOL: 0
+;PCODE: $0000002C VOL: 0
+; 0000 0060     unsigned char i = 0, x = 3, ok = 0;
+; 0000 0061     //char *str[] = {"hh","mm","ss","^^"};
+; 0000 0062     char str[4][3] = {"„„","ıı","ÒÒ","^^"};
+; 0000 0063     unsigned char hour = 0, min = 0, sec = 0, wd = 0;
+; 0000 0064     rtc_get_time(&hour,&min,&sec);//,&wd);
+;PCODE: $0000002D VOL: 0
+;PCODE: $0000002E VOL: 0
+;PCODE: $0000002F VOL: 0
+;PCODE: $00000030 VOL: 0
+;PCODE: $00000031 VOL: 0
+;PCODE: $00000032 VOL: 0
+;	i -> R17
+;	x -> R16
+;	ok -> R19
+;	str -> Y+7
+;	hour -> R18
+;	min -> R21
+;	sec -> R20
+;	wd -> Y+6
+;PCODE: $00000033 VOL: 0
+;PCODE: $00000034 VOL: 0
+;PCODE: $00000035 VOL: 0
+;PCODE: $00000036 VOL: 0
+;PCODE: $00000037 VOL: 0
+;PCODE: $00000038 VOL: 0
+;PCODE: $00000039 VOL: 0
+;PCODE: $0000003A VOL: 0
+;PCODE: $0000003B VOL: 0
+;PCODE: $0000003C VOL: 0
+;PCODE: $0000003D VOL: 0
+;PCODE: $0000003E VOL: 0
+;PCODE: $0000003F VOL: 0
+;PCODE: $00000040 VOL: 0
+;PCODE: $00000041 VOL: 0
+;PCODE: $00000042 VOL: 0
+;PCODE: $00000043 VOL: 0
+;PCODE: $00000044 VOL: 0
+;PCODE: $00000045 VOL: 0
+;PCODE: $00000046 VOL: 0
+;PCODE: $00000047 VOL: 0
+;PCODE: $00000048 VOL: 0
+;PCODE: $00000049 VOL: 0
+;PCODE: $0000004A VOL: 0
+;PCODE: $0000004B VOL: 0
+; 0000 0065     while(!ok)
+;PCODE: $0000004C VOL: 0
+;PCODE: $0000004D VOL: 0
+;PCODE: $0000004E VOL: 0
+; 0000 0066     {
+; 0000 0067         PREV_BTN_PIN = BTN_PIN;
+;PCODE: $0000004F VOL: 0
+;PCODE: $00000050 VOL: 0
+; 0000 0068         sprintf(lcd_buffer,"%u%u:%u%u:%u%u OK!", hour/10,hour%10, min/10,min%10, sec/10,sec%10);
+;PCODE: $00000051 VOL: 0
+;PCODE: $00000052 VOL: 0
+;PCODE: $00000053 VOL: 0
+;PCODE: $00000054 VOL: 0
+;PCODE: $00000055 VOL: 0
+;PCODE: $00000056 VOL: 0
+;PCODE: $00000057 VOL: 0
+;PCODE: $00000058 VOL: 0
+;PCODE: $00000059 VOL: 0
+;PCODE: $0000005A VOL: 0
+;PCODE: $0000005B VOL: 0
+;PCODE: $0000005C VOL: 0
+;PCODE: $0000005D VOL: 0
+;PCODE: $0000005E VOL: 0
+;PCODE: $0000005F VOL: 0
+;PCODE: $00000060 VOL: 0
+;PCODE: $00000061 VOL: 0
+;PCODE: $00000062 VOL: 0
+;PCODE: $00000063 VOL: 0
+;PCODE: $00000064 VOL: 0
+;PCODE: $00000065 VOL: 0
+;PCODE: $00000066 VOL: 0
+;PCODE: $00000067 VOL: 0
+;PCODE: $00000068 VOL: 0
+;PCODE: $00000069 VOL: 0
+;PCODE: $0000006A VOL: 0
+;PCODE: $0000006B VOL: 0
+;PCODE: $0000006C VOL: 0
+;PCODE: $0000006D VOL: 0
+;PCODE: $0000006E VOL: 0
+;PCODE: $0000006F VOL: 0
+;PCODE: $00000070 VOL: 0
+;PCODE: $00000071 VOL: 0
+;PCODE: $00000072 VOL: 0
+;PCODE: $00000073 VOL: 0
+;PCODE: $00000074 VOL: 0
+;PCODE: $00000075 VOL: 0
+;PCODE: $00000076 VOL: 0
+;PCODE: $00000077 VOL: 0
+;PCODE: $00000078 VOL: 0
+;PCODE: $00000079 VOL: 0
+;PCODE: $0000007A VOL: 0
+;PCODE: $0000007B VOL: 0
+;PCODE: $0000007C VOL: 0
+;PCODE: $0000007D VOL: 0
+; 0000 0069         lcd_gotoxy(3,0);
+;PCODE: $0000007E VOL: 0
+;PCODE: $0000007F VOL: 0
+;PCODE: $00000080 VOL: 0
+;PCODE: $00000081 VOL: 0
+;PCODE: $00000082 VOL: 0
+; 0000 006A         lcd_puts(lcd_buffer);
+;PCODE: $00000083 VOL: 0
+;PCODE: $00000084 VOL: 0
+;PCODE: $00000085 VOL: 0
+; 0000 006B         lcd_gotoxy(x,1);
+;PCODE: $00000086 VOL: 0
+;PCODE: $00000087 VOL: 0
+;PCODE: $00000088 VOL: 0
+;PCODE: $00000089 VOL: 0
+; 0000 006C         lcd_puts(str[i]);
+;PCODE: $0000008A VOL: 0
+;PCODE: $0000008B VOL: 0
+;PCODE: $0000008C VOL: 0
+;PCODE: $0000008D VOL: 0
+;PCODE: $0000008E VOL: 0
+;PCODE: $0000008F VOL: 0
+; 0000 006D         if(get_key_status(SELECT_PLUS_BTN))
+;PCODE: $00000090 VOL: 0
+;PCODE: $00000091 VOL: 0
+;PCODE: $00000092 VOL: 0
+;PCODE: $00000093 VOL: 0
+;PCODE: $00000094 VOL: 0
+; 0000 006E         {
+; 0000 006F             //if (!get_prev_key_status(SELECT_PLUS_BTN))
+; 0000 0070             //{
+; 0000 0071             switch(i)
+;PCODE: $00000095 VOL: 0
+;PCODE: $00000096 VOL: 0
+; 0000 0072             {
+; 0000 0073                 case 0:
+;PCODE: $00000097 VOL: 0
+;PCODE: $00000098 VOL: 0
+; 0000 0074                   if (hour == 23) hour = 0;
+;PCODE: $00000099 VOL: 0
+;PCODE: $0000009A VOL: 0
+;PCODE: $0000009B VOL: 0
+;PCODE: $0000009C VOL: 0
+;PCODE: $0000009D VOL: 0
+; 0000 0075                   else hour++;
+;PCODE: $0000009E VOL: 0
+;PCODE: $0000009F VOL: 0
+;PCODE: $000000A0 VOL: 0
+;PCODE: $000000A1 VOL: 0
+; 0000 0076                 break;
+;PCODE: $000000A2 VOL: 0
+;PCODE: $000000A3 VOL: 0
+; 0000 0077                 case 1:
+;PCODE: $000000A4 VOL: 0
+;PCODE: $000000A5 VOL: 0
+;PCODE: $000000A6 VOL: 0
+; 0000 0078                   if (min == 59) min = 0;
+;PCODE: $000000A7 VOL: 0
+;PCODE: $000000A8 VOL: 0
+;PCODE: $000000A9 VOL: 0
+;PCODE: $000000AA VOL: 0
+;PCODE: $000000AB VOL: 0
+; 0000 0079                   else min++;
+;PCODE: $000000AC VOL: 0
+;PCODE: $000000AD VOL: 0
+;PCODE: $000000AE VOL: 0
+;PCODE: $000000AF VOL: 0
+; 0000 007A                 break;
+;PCODE: $000000B0 VOL: 0
+;PCODE: $000000B1 VOL: 0
+; 0000 007B                 case 2:
+;PCODE: $000000B2 VOL: 0
+;PCODE: $000000B3 VOL: 0
+;PCODE: $000000B4 VOL: 0
+; 0000 007C                   if (sec == 59) sec = 0;
+;PCODE: $000000B5 VOL: 0
+;PCODE: $000000B6 VOL: 0
+;PCODE: $000000B7 VOL: 0
+;PCODE: $000000B8 VOL: 0
+;PCODE: $000000B9 VOL: 0
+; 0000 007D                   else sec++;
+;PCODE: $000000BA VOL: 0
+;PCODE: $000000BB VOL: 0
+;PCODE: $000000BC VOL: 0
+;PCODE: $000000BD VOL: 0
+; 0000 007E                 break;
+;PCODE: $000000BE VOL: 0
+;PCODE: $000000BF VOL: 0
+; 0000 007F                 case 3:
+;PCODE: $000000C0 VOL: 0
+;PCODE: $000000C1 VOL: 0
+;PCODE: $000000C2 VOL: 0
+; 0000 0080                   ok = 1;
+;PCODE: $000000C3 VOL: 0
+;PCODE: $000000C4 VOL: 0
+; 0000 0081                 break;
+;PCODE: $000000C5 VOL: 0
+; 0000 0082             }
+;PCODE: $000000C6 VOL: 0
+; 0000 0083             //}
+; 0000 0084             delay_ms(300);
+;PCODE: $000000C7 VOL: 0
+;PCODE: $000000C8 VOL: 0
+;PCODE: $000000C9 VOL: 0
+; 0000 0085         }
+; 0000 0086         if (get_key_status(SELECT_MINUS_BTN))
+;PCODE: $000000CA VOL: 0
+;PCODE: $000000CB VOL: 0
+;PCODE: $000000CC VOL: 0
+;PCODE: $000000CD VOL: 0
+;PCODE: $000000CE VOL: 0
+;PCODE: $000000CF VOL: 0
+; 0000 0087         {
+; 0000 0088             //if (!get_prev_key_status(SELECT_MINUS_BTN))
+; 0000 0089             //{
+; 0000 008A             switch (i)
+;PCODE: $000000D0 VOL: 0
+;PCODE: $000000D1 VOL: 0
+; 0000 008B             {
+; 0000 008C                 case 0:
+;PCODE: $000000D2 VOL: 0
+;PCODE: $000000D3 VOL: 0
+; 0000 008D                   if (hour == 0) hour = 23;
+;PCODE: $000000D4 VOL: 0
+;PCODE: $000000D5 VOL: 0
+;PCODE: $000000D6 VOL: 0
+;PCODE: $000000D7 VOL: 0
+; 0000 008E                   else hour--;
+;PCODE: $000000D8 VOL: 0
+;PCODE: $000000D9 VOL: 0
+;PCODE: $000000DA VOL: 0
+;PCODE: $000000DB VOL: 0
+; 0000 008F                 break;
+;PCODE: $000000DC VOL: 0
+;PCODE: $000000DD VOL: 0
+; 0000 0090                 case 1:
+;PCODE: $000000DE VOL: 0
+;PCODE: $000000DF VOL: 0
+;PCODE: $000000E0 VOL: 0
+; 0000 0091                   if (min == 0) min = 59;
+;PCODE: $000000E1 VOL: 0
+;PCODE: $000000E2 VOL: 0
+;PCODE: $000000E3 VOL: 0
+;PCODE: $000000E4 VOL: 0
+; 0000 0092                   else min--;
+;PCODE: $000000E5 VOL: 0
+;PCODE: $000000E6 VOL: 0
+;PCODE: $000000E7 VOL: 0
+;PCODE: $000000E8 VOL: 0
+; 0000 0093                 break;
+;PCODE: $000000E9 VOL: 0
+;PCODE: $000000EA VOL: 0
+; 0000 0094                 case 2:
+;PCODE: $000000EB VOL: 0
+;PCODE: $000000EC VOL: 0
+;PCODE: $000000ED VOL: 0
+; 0000 0095                   if (sec == 0) sec = 59;
+;PCODE: $000000EE VOL: 0
+;PCODE: $000000EF VOL: 0
+;PCODE: $000000F0 VOL: 0
+;PCODE: $000000F1 VOL: 0
+; 0000 0096                   else sec--;
+;PCODE: $000000F2 VOL: 0
+;PCODE: $000000F3 VOL: 0
+;PCODE: $000000F4 VOL: 0
+;PCODE: $000000F5 VOL: 0
+; 0000 0097                 break;
+;PCODE: $000000F6 VOL: 0
+;PCODE: $000000F7 VOL: 0
+; 0000 0098                 case 3:
+;PCODE: $000000F8 VOL: 0
+;PCODE: $000000F9 VOL: 0
+;PCODE: $000000FA VOL: 0
+; 0000 0099                   ok = 1;
+;PCODE: $000000FB VOL: 0
+;PCODE: $000000FC VOL: 0
+; 0000 009A                 break;
+;PCODE: $000000FD VOL: 0
+; 0000 009B             }
+;PCODE: $000000FE VOL: 0
+; 0000 009C             // }
+; 0000 009D            delay_ms(300);
+;PCODE: $000000FF VOL: 0
+;PCODE: $00000100 VOL: 0
+;PCODE: $00000101 VOL: 0
+; 0000 009E         }
+; 0000 009F         if(get_key_status(MENU_ENTER_BTN))
+;PCODE: $00000102 VOL: 0
+;PCODE: $00000103 VOL: 0
+;PCODE: $00000104 VOL: 0
+;PCODE: $00000105 VOL: 0
+;PCODE: $00000106 VOL: 0
+;PCODE: $00000107 VOL: 0
+; 0000 00A0         {
+; 0000 00A1             if(!get_prev_key_status(MENU_ENTER_BTN))
+;PCODE: $00000108 VOL: 0
+;PCODE: $00000109 VOL: 0
+;PCODE: $0000010A VOL: 0
+;PCODE: $0000010B VOL: 0
+;PCODE: $0000010C VOL: 0
+; 0000 00A2             {
+; 0000 00A3                 lcd_gotoxy(x,1);
+;PCODE: $0000010D VOL: 0
+;PCODE: $0000010E VOL: 0
+;PCODE: $0000010F VOL: 0
+;PCODE: $00000110 VOL: 0
+; 0000 00A4                 lcd_putsf("  ");
+;PCODE: $00000111 VOL: 0
+;PCODE: $00000112 VOL: 0
+;PCODE: $00000113 VOL: 0
+;PCODE: $00000114 VOL: 0
+; 0000 00A5                 if (i == 3)
+;PCODE: $00000115 VOL: 0
+;PCODE: $00000116 VOL: 0
+;PCODE: $00000117 VOL: 0
+; 0000 00A6                 {
+; 0000 00A7                     i = 0;
+;PCODE: $00000118 VOL: 0
+;PCODE: $00000119 VOL: 0
+; 0000 00A8                     x = 3;
+;PCODE: $0000011A VOL: 0
+;PCODE: $0000011B VOL: 0
+; 0000 00A9                 }
+; 0000 00AA                 else
+;PCODE: $0000011C VOL: 0
+;PCODE: $0000011D VOL: 0
+; 0000 00AB                 {
+; 0000 00AC                   x += 3;
+;PCODE: $0000011E VOL: 0
+;PCODE: $0000011F VOL: 0
+; 0000 00AD                   i++;
+;PCODE: $00000120 VOL: 0
+;PCODE: $00000121 VOL: 0
+; 0000 00AE                 }
+;PCODE: $00000122 VOL: 0
+; 0000 00AF            }
+; 0000 00B0        }
+;PCODE: $00000123 VOL: 0
+; 0000 00B1        if(get_key_status(EXIT_BTN))
+;PCODE: $00000124 VOL: 0
+;PCODE: $00000125 VOL: 0
+;PCODE: $00000126 VOL: 0
+;PCODE: $00000127 VOL: 0
+;PCODE: $00000128 VOL: 0
+;PCODE: $00000129 VOL: 0
+; 0000 00B2          if(!get_prev_key_status(EXIT_BTN))
+;PCODE: $0000012A VOL: 0
+;PCODE: $0000012B VOL: 0
+;PCODE: $0000012C VOL: 0
+;PCODE: $0000012D VOL: 0
+;PCODE: $0000012E VOL: 0
+; 0000 00B3          {
+; 0000 00B4             delay_ms(300);
+;PCODE: $0000012F VOL: 0
+;PCODE: $00000130 VOL: 0
+;PCODE: $00000131 VOL: 0
+; 0000 00B5             PREV_BTN_PIN = BTN_PIN;
+;PCODE: $00000132 VOL: 0
+;PCODE: $00000133 VOL: 0
+; 0000 00B6             return;
+;PCODE: $00000134 VOL: 0
+;PCODE: $00000135 VOL: 0
+;PCODE: $00000136 VOL: 0
+; 0000 00B7          }
+; 0000 00B8     }
+;PCODE: $00000137 VOL: 0
+;PCODE: $00000138 VOL: 0
+;PCODE: $00000139 VOL: 0
+;PCODE: $0000013A VOL: 0
+; 0000 00B9   rtc_set_time(hour, min, sec);//, wd);
+;PCODE: $0000013B VOL: 0
+;PCODE: $0000013C VOL: 0
+;PCODE: $0000013D VOL: 0
+;PCODE: $0000013E VOL: 0
+; 0000 00BA }
+;PCODE: $0000013F VOL: 0
+;PCODE: $00000140 VOL: 0
+;PCODE: $00000141 VOL: 0
+;PCODE: $00000142 VOL: 0
+;
+;void set_date(void)
+; 0000 00BD {
+;PCODE: $00000143 VOL: 0
+;PCODE: $00000144 VOL: 0
+; 0000 00BE     unsigned char ok = 0;
+; 0000 00BF     //char str[4][3]={"dd", "mm", "yy", "^^"};
+; 0000 00C0     char str[4][3]={"‰‰", "ÏÏ", "", "^^"};
+; 0000 00C1     unsigned char i = 0, x = 3;
+; 0000 00C2     unsigned char date, month, year;
+; 0000 00C3     rtc_get_date(&date,&month,&year);
+;PCODE: $00000145 VOL: 0
+;PCODE: $00000146 VOL: 0
+;PCODE: $00000147 VOL: 0
+;PCODE: $00000148 VOL: 0
+;PCODE: $00000149 VOL: 0
+;PCODE: $0000014A VOL: 0
+;	ok -> R17
+;	str -> Y+6
+;	i -> R16
+;	x -> R19
+;	date -> R18
+;	month -> R21
+;	year -> R20
+;PCODE: $0000014B VOL: 0
+;PCODE: $0000014C VOL: 0
+;PCODE: $0000014D VOL: 0
+;PCODE: $0000014E VOL: 0
+;PCODE: $0000014F VOL: 0
+;PCODE: $00000150 VOL: 0
+;PCODE: $00000151 VOL: 0
+;PCODE: $00000152 VOL: 0
+;PCODE: $00000153 VOL: 0
+;PCODE: $00000154 VOL: 0
+;PCODE: $00000155 VOL: 0
+;PCODE: $00000156 VOL: 0
+;PCODE: $00000157 VOL: 0
+;PCODE: $00000158 VOL: 0
+;PCODE: $00000159 VOL: 0
+;PCODE: $0000015A VOL: 0
+;PCODE: $0000015B VOL: 0
+;PCODE: $0000015C VOL: 0
+;PCODE: $0000015D VOL: 0
+; 0000 00C4     lcd_clear();
+;PCODE: $0000015E VOL: 0
+; 0000 00C5     while(!ok)
+;PCODE: $0000015F VOL: 0
+;PCODE: $00000160 VOL: 0
+;PCODE: $00000161 VOL: 0
+; 0000 00C6     {
+; 0000 00C7         PREV_BTN_PIN = BTN_PIN;
+;PCODE: $00000162 VOL: 0
+;PCODE: $00000163 VOL: 0
+; 0000 00C8         sprintf(lcd_buffer, "%u%u/%u%u/%u%u OK!", date/10,date%10, month/10,month%10, year/10,year%10);
+;PCODE: $00000164 VOL: 0
+;PCODE: $00000165 VOL: 0
+;PCODE: $00000166 VOL: 0
+;PCODE: $00000167 VOL: 0
+;PCODE: $00000168 VOL: 0
+;PCODE: $00000169 VOL: 0
+;PCODE: $0000016A VOL: 0
+;PCODE: $0000016B VOL: 0
+;PCODE: $0000016C VOL: 0
+;PCODE: $0000016D VOL: 0
+;PCODE: $0000016E VOL: 0
+;PCODE: $0000016F VOL: 0
+;PCODE: $00000170 VOL: 0
+;PCODE: $00000171 VOL: 0
+;PCODE: $00000172 VOL: 0
+;PCODE: $00000173 VOL: 0
+;PCODE: $00000174 VOL: 0
+;PCODE: $00000175 VOL: 0
+;PCODE: $00000176 VOL: 0
+;PCODE: $00000177 VOL: 0
+;PCODE: $00000178 VOL: 0
+;PCODE: $00000179 VOL: 0
+;PCODE: $0000017A VOL: 0
+;PCODE: $0000017B VOL: 0
+;PCODE: $0000017C VOL: 0
+;PCODE: $0000017D VOL: 0
+;PCODE: $0000017E VOL: 0
+;PCODE: $0000017F VOL: 0
+;PCODE: $00000180 VOL: 0
+;PCODE: $00000181 VOL: 0
+;PCODE: $00000182 VOL: 0
+;PCODE: $00000183 VOL: 0
+;PCODE: $00000184 VOL: 0
+;PCODE: $00000185 VOL: 0
+;PCODE: $00000186 VOL: 0
+;PCODE: $00000187 VOL: 0
+;PCODE: $00000188 VOL: 0
+;PCODE: $00000189 VOL: 0
+;PCODE: $0000018A VOL: 0
+;PCODE: $0000018B VOL: 0
+;PCODE: $0000018C VOL: 0
+;PCODE: $0000018D VOL: 0
+;PCODE: $0000018E VOL: 0
+;PCODE: $0000018F VOL: 0
+;PCODE: $00000190 VOL: 0
+; 0000 00C9         lcd_gotoxy(3, 0);
+;PCODE: $00000191 VOL: 0
+;PCODE: $00000192 VOL: 0
+;PCODE: $00000193 VOL: 0
+;PCODE: $00000194 VOL: 0
+;PCODE: $00000195 VOL: 0
+; 0000 00CA         lcd_puts(lcd_buffer);
+;PCODE: $00000196 VOL: 0
+;PCODE: $00000197 VOL: 0
+;PCODE: $00000198 VOL: 0
+; 0000 00CB         lcd_gotoxy(x, 1);
+;PCODE: $00000199 VOL: 0
+;PCODE: $0000019A VOL: 0
+;PCODE: $0000019B VOL: 0
+;PCODE: $0000019C VOL: 0
+; 0000 00CC         lcd_puts(str[i]);
+;PCODE: $0000019D VOL: 0
+;PCODE: $0000019E VOL: 0
+;PCODE: $0000019F VOL: 0
+;PCODE: $000001A0 VOL: 0
+;PCODE: $000001A1 VOL: 0
+;PCODE: $000001A2 VOL: 0
+; 0000 00CD         if (get_key_status(SELECT_PLUS_BTN))
+;PCODE: $000001A3 VOL: 0
+;PCODE: $000001A4 VOL: 0
+;PCODE: $000001A5 VOL: 0
+;PCODE: $000001A6 VOL: 0
+;PCODE: $000001A7 VOL: 0
+; 0000 00CE         {
+; 0000 00CF            if (get_key_status(SELECT_PLUS_BTN))
+;PCODE: $000001A8 VOL: 0
+;PCODE: $000001A9 VOL: 0
+;PCODE: $000001AA VOL: 0
+;PCODE: $000001AB VOL: 0
+;PCODE: $000001AC VOL: 0
+; 0000 00D0               if (!get_prev_key_status(SELECT_PLUS_BTN))
+;PCODE: $000001AD VOL: 0
+;PCODE: $000001AE VOL: 0
+;PCODE: $000001AF VOL: 0
+;PCODE: $000001B0 VOL: 0
+;PCODE: $000001B1 VOL: 0
+; 0000 00D1               {
+; 0000 00D2                  switch (i)
+;PCODE: $000001B2 VOL: 0
+;PCODE: $000001B3 VOL: 0
+; 0000 00D3                  {
+; 0000 00D4                     case 0:
+;PCODE: $000001B4 VOL: 0
+;PCODE: $000001B5 VOL: 0
+; 0000 00D5                       if (date == 31) date = 0;
+;PCODE: $000001B6 VOL: 0
+;PCODE: $000001B7 VOL: 0
+;PCODE: $000001B8 VOL: 0
+;PCODE: $000001B9 VOL: 0
+;PCODE: $000001BA VOL: 0
+; 0000 00D6                       else date++;
+;PCODE: $000001BB VOL: 0
+;PCODE: $000001BC VOL: 0
+;PCODE: $000001BD VOL: 0
+;PCODE: $000001BE VOL: 0
+; 0000 00D7                     break;
+;PCODE: $000001BF VOL: 0
+;PCODE: $000001C0 VOL: 0
+; 0000 00D8                     case 1:
+;PCODE: $000001C1 VOL: 0
+;PCODE: $000001C2 VOL: 0
+;PCODE: $000001C3 VOL: 0
+; 0000 00D9                       if (month == 12) month = 0;
+;PCODE: $000001C4 VOL: 0
+;PCODE: $000001C5 VOL: 0
+;PCODE: $000001C6 VOL: 0
+;PCODE: $000001C7 VOL: 0
+;PCODE: $000001C8 VOL: 0
+; 0000 00DA                       else month++;
+;PCODE: $000001C9 VOL: 0
+;PCODE: $000001CA VOL: 0
+;PCODE: $000001CB VOL: 0
+;PCODE: $000001CC VOL: 0
+; 0000 00DB                     break;
+;PCODE: $000001CD VOL: 0
+;PCODE: $000001CE VOL: 0
+; 0000 00DC                     case 2:
+;PCODE: $000001CF VOL: 0
+;PCODE: $000001D0 VOL: 0
+;PCODE: $000001D1 VOL: 0
+; 0000 00DD                        if (year == 99) year = 0;
+;PCODE: $000001D2 VOL: 0
+;PCODE: $000001D3 VOL: 0
+;PCODE: $000001D4 VOL: 0
+;PCODE: $000001D5 VOL: 0
+;PCODE: $000001D6 VOL: 0
+; 0000 00DE                        else year++;
+;PCODE: $000001D7 VOL: 0
+;PCODE: $000001D8 VOL: 0
+;PCODE: $000001D9 VOL: 0
+;PCODE: $000001DA VOL: 0
+; 0000 00DF                     break;
+;PCODE: $000001DB VOL: 0
+;PCODE: $000001DC VOL: 0
+; 0000 00E0                     case 3:
+;PCODE: $000001DD VOL: 0
+;PCODE: $000001DE VOL: 0
+;PCODE: $000001DF VOL: 0
+; 0000 00E1                       ok = 1;
+;PCODE: $000001E0 VOL: 0
+;PCODE: $000001E1 VOL: 0
+; 0000 00E2                     break;
+;PCODE: $000001E2 VOL: 0
+; 0000 00E3                   }
+;PCODE: $000001E3 VOL: 0
+; 0000 00E4                }
+; 0000 00E5         }
+;PCODE: $000001E4 VOL: 0
+;PCODE: $000001E5 VOL: 0
+; 0000 00E6         if (get_key_status(SELECT_MINUS_BTN))
+;PCODE: $000001E6 VOL: 0
+;PCODE: $000001E7 VOL: 0
+;PCODE: $000001E8 VOL: 0
+;PCODE: $000001E9 VOL: 0
+;PCODE: $000001EA VOL: 0
+;PCODE: $000001EB VOL: 0
+; 0000 00E7         {
+; 0000 00E8             if (get_key_status(SELECT_MINUS_BTN))
+;PCODE: $000001EC VOL: 0
+;PCODE: $000001ED VOL: 0
+;PCODE: $000001EE VOL: 0
+;PCODE: $000001EF VOL: 0
+;PCODE: $000001F0 VOL: 0
+; 0000 00E9               if (!get_prev_key_status(SELECT_MINUS_BTN))
+;PCODE: $000001F1 VOL: 0
+;PCODE: $000001F2 VOL: 0
+;PCODE: $000001F3 VOL: 0
+;PCODE: $000001F4 VOL: 0
+;PCODE: $000001F5 VOL: 0
+; 0000 00EA               {
+; 0000 00EB                 switch (i)
+;PCODE: $000001F6 VOL: 0
+;PCODE: $000001F7 VOL: 0
+; 0000 00EC                 {
+; 0000 00ED                     case 0:
+;PCODE: $000001F8 VOL: 0
+;PCODE: $000001F9 VOL: 0
+; 0000 00EE                       if (date == 0) date = 31;
+;PCODE: $000001FA VOL: 0
+;PCODE: $000001FB VOL: 0
+;PCODE: $000001FC VOL: 0
+;PCODE: $000001FD VOL: 0
+; 0000 00EF                       else date--;
+;PCODE: $000001FE VOL: 0
+;PCODE: $000001FF VOL: 0
+;PCODE: $00000200 VOL: 0
+;PCODE: $00000201 VOL: 0
+; 0000 00F0                     break;
+;PCODE: $00000202 VOL: 0
+;PCODE: $00000203 VOL: 0
+; 0000 00F1                     case 1:
+;PCODE: $00000204 VOL: 0
+;PCODE: $00000205 VOL: 0
+;PCODE: $00000206 VOL: 0
+; 0000 00F2                        if (month == 0) month = 12;
+;PCODE: $00000207 VOL: 0
+;PCODE: $00000208 VOL: 0
+;PCODE: $00000209 VOL: 0
+;PCODE: $0000020A VOL: 0
+; 0000 00F3                        else month--;
+;PCODE: $0000020B VOL: 0
+;PCODE: $0000020C VOL: 0
+;PCODE: $0000020D VOL: 0
+;PCODE: $0000020E VOL: 0
+; 0000 00F4                     break;
+;PCODE: $0000020F VOL: 0
+;PCODE: $00000210 VOL: 0
+; 0000 00F5                     case 2:
+;PCODE: $00000211 VOL: 0
+;PCODE: $00000212 VOL: 0
+;PCODE: $00000213 VOL: 0
+; 0000 00F6                        if (year == 0) year = 99;
+;PCODE: $00000214 VOL: 0
+;PCODE: $00000215 VOL: 0
+;PCODE: $00000216 VOL: 0
+;PCODE: $00000217 VOL: 0
+; 0000 00F7                        else year--;
+;PCODE: $00000218 VOL: 0
+;PCODE: $00000219 VOL: 0
+;PCODE: $0000021A VOL: 0
+;PCODE: $0000021B VOL: 0
+; 0000 00F8                     break;
+;PCODE: $0000021C VOL: 0
+;PCODE: $0000021D VOL: 0
+; 0000 00F9                     case 3:
+;PCODE: $0000021E VOL: 0
+;PCODE: $0000021F VOL: 0
+;PCODE: $00000220 VOL: 0
+; 0000 00FA                       ok = 1;
+;PCODE: $00000221 VOL: 0
+;PCODE: $00000222 VOL: 0
+; 0000 00FB                     break;
+;PCODE: $00000223 VOL: 0
+; 0000 00FC                 }
+;PCODE: $00000224 VOL: 0
+; 0000 00FD             }
+; 0000 00FE         }
+;PCODE: $00000225 VOL: 0
+;PCODE: $00000226 VOL: 0
+; 0000 00FF         if (get_key_status(MENU_ENTER_BTN))
+;PCODE: $00000227 VOL: 0
+;PCODE: $00000228 VOL: 0
+;PCODE: $00000229 VOL: 0
+;PCODE: $0000022A VOL: 0
+;PCODE: $0000022B VOL: 0
+;PCODE: $0000022C VOL: 0
+; 0000 0100         {
+; 0000 0101             if (!get_prev_key_status(MENU_ENTER_BTN))
+;PCODE: $0000022D VOL: 0
+;PCODE: $0000022E VOL: 0
+;PCODE: $0000022F VOL: 0
+;PCODE: $00000230 VOL: 0
+;PCODE: $00000231 VOL: 0
+; 0000 0102             {
+; 0000 0103                 lcd_gotoxy(x, 1);
+;PCODE: $00000232 VOL: 0
+;PCODE: $00000233 VOL: 0
+;PCODE: $00000234 VOL: 0
+;PCODE: $00000235 VOL: 0
+; 0000 0104                 lcd_putsf("  ");
+;PCODE: $00000236 VOL: 0
+;PCODE: $00000237 VOL: 0
+;PCODE: $00000238 VOL: 0
+;PCODE: $00000239 VOL: 0
+; 0000 0105                 if (i == 3)
+;PCODE: $0000023A VOL: 0
+;PCODE: $0000023B VOL: 0
+;PCODE: $0000023C VOL: 0
+; 0000 0106                 {
+; 0000 0107                     i = 0;
+;PCODE: $0000023D VOL: 0
+;PCODE: $0000023E VOL: 0
+; 0000 0108                     x = 3;
+;PCODE: $0000023F VOL: 0
+;PCODE: $00000240 VOL: 0
+; 0000 0109                 }
+; 0000 010A                 else
+;PCODE: $00000241 VOL: 0
+;PCODE: $00000242 VOL: 0
+; 0000 010B                 {
+; 0000 010C                     i++;
+;PCODE: $00000243 VOL: 0
+;PCODE: $00000244 VOL: 0
+; 0000 010D                     x += 3;
+;PCODE: $00000245 VOL: 0
+;PCODE: $00000246 VOL: 0
+; 0000 010E                 }
+;PCODE: $00000247 VOL: 0
+; 0000 010F             }
+; 0000 0110        }
+;PCODE: $00000248 VOL: 0
+; 0000 0111        if (get_key_status(EXIT_BTN))
+;PCODE: $00000249 VOL: 0
+;PCODE: $0000024A VOL: 0
+;PCODE: $0000024B VOL: 0
+;PCODE: $0000024C VOL: 0
+;PCODE: $0000024D VOL: 0
+;PCODE: $0000024E VOL: 0
+; 0000 0112          if (!get_prev_key_status(EXIT_BTN))
+;PCODE: $0000024F VOL: 0
+;PCODE: $00000250 VOL: 0
+;PCODE: $00000251 VOL: 0
+;PCODE: $00000252 VOL: 0
+;PCODE: $00000253 VOL: 0
+; 0000 0113             {
+; 0000 0114                delay_ms(300);
+;PCODE: $00000254 VOL: 0
+;PCODE: $00000255 VOL: 0
+;PCODE: $00000256 VOL: 0
+; 0000 0115                PREV_BTN_PIN = BTN_PIN;
+;PCODE: $00000257 VOL: 0
+;PCODE: $00000258 VOL: 0
+; 0000 0116                return;
+;PCODE: $00000259 VOL: 0
+;PCODE: $0000025A VOL: 0
+;PCODE: $0000025B VOL: 0
+; 0000 0117             }
+; 0000 0118  }
+;PCODE: $0000025C VOL: 0
+;PCODE: $0000025D VOL: 0
+;PCODE: $0000025E VOL: 0
+;PCODE: $0000025F VOL: 0
+; 0000 0119  rtc_set_date(date, month, year);
+;PCODE: $00000260 VOL: 0
+;PCODE: $00000261 VOL: 0
+;PCODE: $00000262 VOL: 0
+;PCODE: $00000263 VOL: 0
+; 0000 011A }
+;PCODE: $00000264 VOL: 0
+;PCODE: $00000265 VOL: 0
+;PCODE: $00000266 VOL: 0
+;PCODE: $00000267 VOL: 0
+;
+;void set_values(unsigned char j, values_range *p)
+; 0000 011D {
+;PCODE: $00000268 VOL: 0
+;PCODE: $00000269 VOL: 0
+; 0000 011E     char str[3][4]={"<=","<=","OK!"};
+; 0000 011F     unsigned char i = 0, xpos[] = {14, 14, 13}, ypos[] = {0,1,1};
+; 0000 0120     unsigned char ok = 0;
+; 0000 0121     values_range v[4] = {{0,99},{10,100},{0,100},{300,1000}};
+; 0000 0122     values_range tmp;
+; 0000 0123     tmp = *p;
+;PCODE: $0000026A VOL: 0
+;PCODE: $0000026B VOL: 0
+;PCODE: $0000026C VOL: 0
+;PCODE: $0000026D VOL: 0
+;PCODE: $0000026E VOL: 0
+;PCODE: $0000026F VOL: 0
+;PCODE: $00000270 VOL: 0
+;	j -> Y+42
+;	*p -> Y+40
+;	str -> Y+28
+;	i -> R17
+;	xpos -> Y+25
+;	ypos -> Y+22
+;	ok -> R16
+;	v -> Y+6
+;	tmp -> Y+2
+;PCODE: $00000271 VOL: 0
+;PCODE: $00000272 VOL: 0
+;PCODE: $00000273 VOL: 0
+;PCODE: $00000274 VOL: 0
+;PCODE: $00000275 VOL: 0
+;PCODE: $00000276 VOL: 0
+;PCODE: $00000277 VOL: 0
+; 0000 0124 
+; 0000 0125     lcd_clear();
+;PCODE: $00000278 VOL: 0
+; 0000 0126 
+; 0000 0127     while(!ok)
+;PCODE: $00000279 VOL: 0
+;PCODE: $0000027A VOL: 0
+;PCODE: $0000027B VOL: 0
+; 0000 0128     {
+; 0000 0129         PREV_BTN_PIN = BTN_PIN;
+;PCODE: $0000027C VOL: 0
+;PCODE: $0000027D VOL: 0
+; 0000 012A         switch (j)
+;PCODE: $0000027E VOL: 0
+;PCODE: $0000027F VOL: 0
+; 0000 012B         {
+; 0000 012C             case 0:
+;PCODE: $00000280 VOL: 0
+;PCODE: $00000281 VOL: 0
+; 0000 012D               sprintf(lcd_buffer,"Tmin: %u%cC \nTmax: %u%cC ", tmp.min, 0xdf, tmp.max, 0xdf);
+;PCODE: $00000282 VOL: 0
+;PCODE: $00000283 VOL: 0
+;PCODE: $00000284 VOL: 0
+;PCODE: $00000285 VOL: 0
+;PCODE: $00000286 VOL: 0
+;PCODE: $00000287 VOL: 0
+;PCODE: $00000288 VOL: 0
+;PCODE: $00000289 VOL: 0
+;PCODE: $0000028A VOL: 0
+;PCODE: $0000028B VOL: 0
+;PCODE: $0000028C VOL: 0
+;PCODE: $0000028D VOL: 0
+;PCODE: $0000028E VOL: 0
+;PCODE: $0000028F VOL: 0
+;PCODE: $00000290 VOL: 0
+;PCODE: $00000291 VOL: 0
+;PCODE: $00000292 VOL: 0
+;PCODE: $00000293 VOL: 0
+;PCODE: $00000294 VOL: 0
+; 0000 012E             break;
+;PCODE: $00000295 VOL: 0
+; 0000 012F             case 1:
+;PCODE: $00000296 VOL: 0
+;PCODE: $00000297 VOL: 0
+;PCODE: $00000298 VOL: 0
+; 0000 0130               sprintf(lcd_buffer,"Hmin: %u%% \nHmax: %u%% ", tmp.min, tmp.max);
+;PCODE: $00000299 VOL: 0
+;PCODE: $0000029A VOL: 0
+;PCODE: $0000029B VOL: 0
+;PCODE: $0000029C VOL: 0
+;PCODE: $0000029D VOL: 0
+;PCODE: $0000029E VOL: 0
+;PCODE: $0000029F VOL: 0
+;PCODE: $000002A0 VOL: 0
+;PCODE: $000002A1 VOL: 0
+;PCODE: $000002A2 VOL: 0
+;PCODE: $000002A3 VOL: 0
+;PCODE: $000002A4 VOL: 0
+;PCODE: $000002A5 VOL: 0
+;PCODE: $000002A6 VOL: 0
+;PCODE: $000002A7 VOL: 0
+; 0000 0131             break;
+;PCODE: $000002A8 VOL: 0
+; 0000 0132             case 2:
+;PCODE: $000002A9 VOL: 0
+;PCODE: $000002AA VOL: 0
+;PCODE: $000002AB VOL: 0
+; 0000 0133               sprintf(lcd_buffer,"Smin: %u%% \nSmax: %u%% ", tmp.min, tmp.max);
+;PCODE: $000002AC VOL: 0
+;PCODE: $000002AD VOL: 0
+;PCODE: $000002AE VOL: 0
+;PCODE: $000002AF VOL: 0
+;PCODE: $000002B0 VOL: 0
+;PCODE: $000002B1 VOL: 0
+;PCODE: $000002B2 VOL: 0
+;PCODE: $000002B3 VOL: 0
+;PCODE: $000002B4 VOL: 0
+;PCODE: $000002B5 VOL: 0
+;PCODE: $000002B6 VOL: 0
+;PCODE: $000002B7 VOL: 0
+;PCODE: $000002B8 VOL: 0
+;PCODE: $000002B9 VOL: 0
+;PCODE: $000002BA VOL: 0
+; 0000 0134             break;
+;PCODE: $000002BB VOL: 0
+; 0000 0135             case 3:
+;PCODE: $000002BC VOL: 0
+;PCODE: $000002BD VOL: 0
+;PCODE: $000002BE VOL: 0
+; 0000 0136               sprintf(lcd_buffer,"Imin: %u lx \nImax: %u lx ", tmp.min, tmp.max);
+;PCODE: $000002BF VOL: 0
+;PCODE: $000002C0 VOL: 0
+;PCODE: $000002C1 VOL: 0
+;PCODE: $000002C2 VOL: 0
+;PCODE: $000002C3 VOL: 0
+;PCODE: $000002C4 VOL: 0
+;PCODE: $000002C5 VOL: 0
+;PCODE: $000002C6 VOL: 0
+;PCODE: $000002C7 VOL: 0
+;PCODE: $000002C8 VOL: 0
+;PCODE: $000002C9 VOL: 0
+;PCODE: $000002CA VOL: 0
+;PCODE: $000002CB VOL: 0
+;PCODE: $000002CC VOL: 0
+;PCODE: $000002CD VOL: 0
+; 0000 0137             break;
+;PCODE: $000002CE VOL: 0
+; 0000 0138         }
+;PCODE: $000002CF VOL: 0
+; 0000 0139         lcd_gotoxy(0,0);
+;PCODE: $000002D0 VOL: 0
+;PCODE: $000002D1 VOL: 0
+;PCODE: $000002D2 VOL: 0
+;PCODE: $000002D3 VOL: 0
+;PCODE: $000002D4 VOL: 0
+; 0000 013A         lcd_puts(lcd_buffer);
+;PCODE: $000002D5 VOL: 0
+;PCODE: $000002D6 VOL: 0
+;PCODE: $000002D7 VOL: 0
+; 0000 013B         lcd_gotoxy(xpos[i],ypos[i]);
+;PCODE: $000002D8 VOL: 0
+;PCODE: $000002D9 VOL: 0
+;PCODE: $000002DA VOL: 0
+;PCODE: $000002DB VOL: 0
+;PCODE: $000002DC VOL: 0
+;PCODE: $000002DD VOL: 0
+;PCODE: $000002DE VOL: 0
+;PCODE: $000002DF VOL: 0
+;PCODE: $000002E0 VOL: 0
+;PCODE: $000002E1 VOL: 0
+;PCODE: $000002E2 VOL: 0
+;PCODE: $000002E3 VOL: 0
+;PCODE: $000002E4 VOL: 0
+; 0000 013C         lcd_puts(str[i]);
+;PCODE: $000002E5 VOL: 0
+;PCODE: $000002E6 VOL: 0
+;PCODE: $000002E7 VOL: 0
+;PCODE: $000002E8 VOL: 0
+;PCODE: $000002E9 VOL: 0
+;PCODE: $000002EA VOL: 0
+;PCODE: $000002EB VOL: 0
+; 0000 013D 
+; 0000 013E         if(get_key_status(SELECT_PLUS_BTN))
+;PCODE: $000002EC VOL: 0
+;PCODE: $000002ED VOL: 0
+;PCODE: $000002EE VOL: 0
+;PCODE: $000002EF VOL: 0
+;PCODE: $000002F0 VOL: 0
+; 0000 013F         {
+; 0000 0140             //if (!get_prev_key_status(SELECT_PLUS_BTN))
+; 0000 0141             {
+; 0000 0142                 switch(i)
+;PCODE: $000002F1 VOL: 0
+;PCODE: $000002F2 VOL: 0
+; 0000 0143                 {
+; 0000 0144                     case 0:
+;PCODE: $000002F3 VOL: 0
+;PCODE: $000002F4 VOL: 0
+; 0000 0145                       if (tmp.min < tmp.max) tmp.min++;
+;PCODE: $000002F5 VOL: 0
+;PCODE: $000002F6 VOL: 0
+;PCODE: $000002F7 VOL: 0
+;PCODE: $000002F8 VOL: 0
+;PCODE: $000002F9 VOL: 0
+;PCODE: $000002FA VOL: 0
+;PCODE: $000002FB VOL: 0
+; 0000 0146                     break;
+;PCODE: $000002FC VOL: 0
+;PCODE: $000002FD VOL: 0
+; 0000 0147                     case 1:
+;PCODE: $000002FE VOL: 0
+;PCODE: $000002FF VOL: 0
+;PCODE: $00000300 VOL: 0
+; 0000 0148                       if (tmp.max < v[j].max) tmp.max++;
+;PCODE: $00000301 VOL: 0
+;PCODE: $00000302 VOL: 0
+;PCODE: $00000303 VOL: 0
+;PCODE: $00000304 VOL: 0
+;PCODE: $00000305 VOL: 0
+;PCODE: $00000306 VOL: 0
+;PCODE: $00000307 VOL: 0
+;PCODE: $00000308 VOL: 0
+;PCODE: $00000309 VOL: 0
+;PCODE: $0000030A VOL: 0
+;PCODE: $0000030B VOL: 0
+;PCODE: $0000030C VOL: 0
+;PCODE: $0000030D VOL: 0
+; 0000 0149                     break;
+;PCODE: $0000030E VOL: 0
+;PCODE: $0000030F VOL: 0
+; 0000 014A                     case 2:
+;PCODE: $00000310 VOL: 0
+;PCODE: $00000311 VOL: 0
+;PCODE: $00000312 VOL: 0
+; 0000 014B                       ok = 1;
+;PCODE: $00000313 VOL: 0
+;PCODE: $00000314 VOL: 0
+; 0000 014C                     break;
+;PCODE: $00000315 VOL: 0
+; 0000 014D                 }
+;PCODE: $00000316 VOL: 0
+; 0000 014E             }
+; 0000 014F             delay_ms(300);
+;PCODE: $00000317 VOL: 0
+;PCODE: $00000318 VOL: 0
+;PCODE: $00000319 VOL: 0
+; 0000 0150         }
+; 0000 0151         if (get_key_status(SELECT_MINUS_BTN))
+;PCODE: $0000031A VOL: 0
+;PCODE: $0000031B VOL: 0
+;PCODE: $0000031C VOL: 0
+;PCODE: $0000031D VOL: 0
+;PCODE: $0000031E VOL: 0
+;PCODE: $0000031F VOL: 0
+; 0000 0152         {
+; 0000 0153             //if (!get_prev_key_status(SELECT_MINUS_BTN))
+; 0000 0154             {
+; 0000 0155                 switch (i) {
+;PCODE: $00000320 VOL: 0
+;PCODE: $00000321 VOL: 0
+; 0000 0156                    case 0:
+;PCODE: $00000322 VOL: 0
+;PCODE: $00000323 VOL: 0
+; 0000 0157                      if (tmp.min > v[j].min) tmp.min--;
+;PCODE: $00000324 VOL: 0
+;PCODE: $00000325 VOL: 0
+;PCODE: $00000326 VOL: 0
+;PCODE: $00000327 VOL: 0
+;PCODE: $00000328 VOL: 0
+;PCODE: $00000329 VOL: 0
+;PCODE: $0000032A VOL: 0
+;PCODE: $0000032B VOL: 0
+;PCODE: $0000032C VOL: 0
+;PCODE: $0000032D VOL: 0
+;PCODE: $0000032E VOL: 0
+;PCODE: $0000032F VOL: 0
+; 0000 0158                      break;
+;PCODE: $00000330 VOL: 0
+;PCODE: $00000331 VOL: 0
+; 0000 0159                    case 1:
+;PCODE: $00000332 VOL: 0
+;PCODE: $00000333 VOL: 0
+;PCODE: $00000334 VOL: 0
+; 0000 015A                      if (tmp.max > tmp.min) tmp.max--;
+;PCODE: $00000335 VOL: 0
+;PCODE: $00000336 VOL: 0
+;PCODE: $00000337 VOL: 0
+;PCODE: $00000338 VOL: 0
+;PCODE: $00000339 VOL: 0
+;PCODE: $0000033A VOL: 0
+;PCODE: $0000033B VOL: 0
+; 0000 015B                    break;
+;PCODE: $0000033C VOL: 0
+;PCODE: $0000033D VOL: 0
+; 0000 015C                    case 2:
+;PCODE: $0000033E VOL: 0
+;PCODE: $0000033F VOL: 0
+;PCODE: $00000340 VOL: 0
+; 0000 015D                      ok = 1;
+;PCODE: $00000341 VOL: 0
+;PCODE: $00000342 VOL: 0
+; 0000 015E                    break;
+;PCODE: $00000343 VOL: 0
+; 0000 015F                 }
+;PCODE: $00000344 VOL: 0
+; 0000 0160 
+; 0000 0161          }
+; 0000 0162          delay_ms(300);
+;PCODE: $00000345 VOL: 0
+;PCODE: $00000346 VOL: 0
+;PCODE: $00000347 VOL: 0
+; 0000 0163      }
+; 0000 0164      if(get_key_status(MENU_ENTER_BTN))
+;PCODE: $00000348 VOL: 0
+;PCODE: $00000349 VOL: 0
+;PCODE: $0000034A VOL: 0
+;PCODE: $0000034B VOL: 0
+;PCODE: $0000034C VOL: 0
+;PCODE: $0000034D VOL: 0
+; 0000 0165      {
+; 0000 0166        if(!get_prev_key_status(MENU_ENTER_BTN))
+;PCODE: $0000034E VOL: 0
+;PCODE: $0000034F VOL: 0
+;PCODE: $00000350 VOL: 0
+;PCODE: $00000351 VOL: 0
+;PCODE: $00000352 VOL: 0
+; 0000 0167        {
+; 0000 0168           lcd_gotoxy(xpos[i],ypos[i]);
+;PCODE: $00000353 VOL: 0
+;PCODE: $00000354 VOL: 0
+;PCODE: $00000355 VOL: 0
+;PCODE: $00000356 VOL: 0
+;PCODE: $00000357 VOL: 0
+;PCODE: $00000358 VOL: 0
+;PCODE: $00000359 VOL: 0
+;PCODE: $0000035A VOL: 0
+;PCODE: $0000035B VOL: 0
+;PCODE: $0000035C VOL: 0
+;PCODE: $0000035D VOL: 0
+;PCODE: $0000035E VOL: 0
+;PCODE: $0000035F VOL: 0
+; 0000 0169           lcd_putsf("  ");
+;PCODE: $00000360 VOL: 0
+;PCODE: $00000361 VOL: 0
+;PCODE: $00000362 VOL: 0
+;PCODE: $00000363 VOL: 0
+; 0000 016A           if (i==2)
+;PCODE: $00000364 VOL: 0
+;PCODE: $00000365 VOL: 0
+;PCODE: $00000366 VOL: 0
+; 0000 016B           {
+; 0000 016C              i=0;
+;PCODE: $00000367 VOL: 0
+;PCODE: $00000368 VOL: 0
+; 0000 016D              lcd_putsf(" ");
+;PCODE: $00000369 VOL: 0
+;PCODE: $0000036A VOL: 0
+;PCODE: $0000036B VOL: 0
+;PCODE: $0000036C VOL: 0
+; 0000 016E           }
+; 0000 016F           else
+;PCODE: $0000036D VOL: 0
+;PCODE: $0000036E VOL: 0
+; 0000 0170             i++;
+;PCODE: $0000036F VOL: 0
+;PCODE: $00000370 VOL: 0
+; 0000 0171          }
+;PCODE: $00000371 VOL: 0
+; 0000 0172        }
+;PCODE: $00000372 VOL: 0
+; 0000 0173        if(get_key_status(EXIT_BTN))
+;PCODE: $00000373 VOL: 0
+;PCODE: $00000374 VOL: 0
+;PCODE: $00000375 VOL: 0
+;PCODE: $00000376 VOL: 0
+;PCODE: $00000377 VOL: 0
+;PCODE: $00000378 VOL: 0
+; 0000 0174          if(!get_prev_key_status(EXIT_BTN))
+;PCODE: $00000379 VOL: 0
+;PCODE: $0000037A VOL: 0
+;PCODE: $0000037B VOL: 0
+;PCODE: $0000037C VOL: 0
+;PCODE: $0000037D VOL: 0
+; 0000 0175          {
+; 0000 0176             delay_ms(300);
+;PCODE: $0000037E VOL: 0
+;PCODE: $0000037F VOL: 0
+;PCODE: $00000380 VOL: 0
+; 0000 0177             PREV_BTN_PIN = BTN_PIN;
+;PCODE: $00000381 VOL: 0
+;PCODE: $00000382 VOL: 0
+; 0000 0178             return;
+;PCODE: $00000383 VOL: 0
+;PCODE: $00000384 VOL: 0
+;PCODE: $00000385 VOL: 0
+;PCODE: $00000386 VOL: 0
+;PCODE: $00000387 VOL: 0
+;PCODE: $00000388 VOL: 0
+; 0000 0179          }
+; 0000 017A     }
+;PCODE: $00000389 VOL: 0
+;PCODE: $0000038A VOL: 0
+;PCODE: $0000038B VOL: 0
+;PCODE: $0000038C VOL: 0
+; 0000 017B     *p = tmp;
+;PCODE: $0000038D VOL: 0
+;PCODE: $0000038E VOL: 0
+;PCODE: $0000038F VOL: 0
+; 0000 017C }
+;PCODE: $00000390 VOL: 0
+;PCODE: $00000391 VOL: 0
+;PCODE: $00000392 VOL: 0
+;PCODE: $00000393 VOL: 0
+;PCODE: $00000394 VOL: 0
+;PCODE: $00000395 VOL: 0
+;PCODE: $00000396 VOL: 0
+;
+;void set_watering()
+; 0000 017F {
+;PCODE: $00000397 VOL: 0
+;PCODE: $00000398 VOL: 0
+; 0000 0180     unsigned char i = 0, j = 0, x = 0, ok = 0;
+; 0000 0181     //char *str[] = {"pr", "hh","mm","^^", "^^"};
+; 0000 0182     char *str[5] = {"Ô", "„„","ıı","^^", "^^"};
+; 0000 0183     unsigned char hour, min, mode_on_off;
+; 0000 0184     char *s_mode[] = {"OFF", "ON "};
+; 0000 0185 
+; 0000 0186     hour = w_time[j].hour;
+;PCODE: $00000399 VOL: 0
+;PCODE: $0000039A VOL: 0
+;PCODE: $0000039B VOL: 0
+;PCODE: $0000039C VOL: 0
+;PCODE: $0000039D VOL: 0
+;PCODE: $0000039E VOL: 0
+;	i -> R17
+;	j -> R16
+;	x -> R19
+;	ok -> R18
+;	str -> Y+11
+;	hour -> R21
+;	min -> R20
+;	mode_on_off -> Y+10
+;	s_mode -> Y+6
+;PCODE: $0000039F VOL: 0
+;PCODE: $000003A0 VOL: 0
+;PCODE: $000003A1 VOL: 0
+;PCODE: $000003A2 VOL: 0
+;PCODE: $000003A3 VOL: 0
+;PCODE: $000003A4 VOL: 0
+;PCODE: $000003A5 VOL: 0
+;PCODE: $000003A6 VOL: 0
+;PCODE: $000003A7 VOL: 0
+;PCODE: $000003A8 VOL: 0
+;PCODE: $000003A9 VOL: 0
+;PCODE: $000003AA VOL: 0
+; 0000 0187     min = w_time[j].min;
+;PCODE: $000003AB VOL: 0
+;PCODE: $000003AC VOL: 0
+;PCODE: $000003AD VOL: 0
+;PCODE: $000003AE VOL: 0
+;PCODE: $000003AF VOL: 0
+; 0000 0188     mode_on_off = w_time[j].mode_on_off;
+;PCODE: $000003B0 VOL: 0
+;PCODE: $000003B1 VOL: 0
+;PCODE: $000003B2 VOL: 0
+;PCODE: $000003B3 VOL: 0
+;PCODE: $000003B4 VOL: 0
+;PCODE: $000003B5 VOL: 0
+; 0000 0189 
+; 0000 018A     while(!ok)
+;PCODE: $000003B6 VOL: 0
+;PCODE: $000003B7 VOL: 0
+;PCODE: $000003B8 VOL: 0
+; 0000 018B     {
+; 0000 018C         PREV_BTN_PIN = BTN_PIN;
+;PCODE: $000003B9 VOL: 0
+;PCODE: $000003BA VOL: 0
+; 0000 018D         sprintf(lcd_buffer,"#%u %u%u:%u%u %s OK!", j+1, hour/10,hour%10, min/10,min%10, s_mode[mode_on_off]);
+;PCODE: $000003BB VOL: 0
+;PCODE: $000003BC VOL: 0
+;PCODE: $000003BD VOL: 0
+;PCODE: $000003BE VOL: 0
+;PCODE: $000003BF VOL: 0
+;PCODE: $000003C0 VOL: 0
+;PCODE: $000003C1 VOL: 0
+;PCODE: $000003C2 VOL: 0
+;PCODE: $000003C3 VOL: 0
+;PCODE: $000003C4 VOL: 0
+;PCODE: $000003C5 VOL: 0
+;PCODE: $000003C6 VOL: 0
+;PCODE: $000003C7 VOL: 0
+;PCODE: $000003C8 VOL: 0
+;PCODE: $000003C9 VOL: 0
+;PCODE: $000003CA VOL: 0
+;PCODE: $000003CB VOL: 0
+;PCODE: $000003CC VOL: 0
+;PCODE: $000003CD VOL: 0
+;PCODE: $000003CE VOL: 0
+;PCODE: $000003CF VOL: 0
+;PCODE: $000003D0 VOL: 0
+;PCODE: $000003D1 VOL: 0
+;PCODE: $000003D2 VOL: 0
+;PCODE: $000003D3 VOL: 0
+;PCODE: $000003D4 VOL: 0
+;PCODE: $000003D5 VOL: 0
+;PCODE: $000003D6 VOL: 0
+;PCODE: $000003D7 VOL: 0
+;PCODE: $000003D8 VOL: 0
+;PCODE: $000003D9 VOL: 0
+;PCODE: $000003DA VOL: 0
+;PCODE: $000003DB VOL: 0
+;PCODE: $000003DC VOL: 0
+;PCODE: $000003DD VOL: 0
+;PCODE: $000003DE VOL: 0
+;PCODE: $000003DF VOL: 0
+;PCODE: $000003E0 VOL: 0
+;PCODE: $000003E1 VOL: 0
+;PCODE: $000003E2 VOL: 0
+;PCODE: $000003E3 VOL: 0
+;PCODE: $000003E4 VOL: 0
+;PCODE: $000003E5 VOL: 0
+;PCODE: $000003E6 VOL: 0
+;PCODE: $000003E7 VOL: 0
+;PCODE: $000003E8 VOL: 0
+; 0000 018E         lcd_gotoxy(0,0);
+;PCODE: $000003E9 VOL: 0
+;PCODE: $000003EA VOL: 0
+;PCODE: $000003EB VOL: 0
+;PCODE: $000003EC VOL: 0
+;PCODE: $000003ED VOL: 0
+; 0000 018F         lcd_puts(lcd_buffer);
+;PCODE: $000003EE VOL: 0
+;PCODE: $000003EF VOL: 0
+;PCODE: $000003F0 VOL: 0
+; 0000 0190         lcd_gotoxy(x,1);
+;PCODE: $000003F1 VOL: 0
+;PCODE: $000003F2 VOL: 0
+;PCODE: $000003F3 VOL: 0
+;PCODE: $000003F4 VOL: 0
+; 0000 0191         lcd_puts(str[i]);
+;PCODE: $000003F5 VOL: 0
+;PCODE: $000003F6 VOL: 0
+;PCODE: $000003F7 VOL: 0
+;PCODE: $000003F8 VOL: 0
+;PCODE: $000003F9 VOL: 0
+;PCODE: $000003FA VOL: 0
+;PCODE: $000003FB VOL: 0
+;PCODE: $000003FC VOL: 0
+; 0000 0192         if(get_key_status(SELECT_PLUS_BTN))
+;PCODE: $000003FD VOL: 0
+;PCODE: $000003FE VOL: 0
+;PCODE: $000003FF VOL: 0
+;PCODE: $00000400 VOL: 0
+;PCODE: $00000401 VOL: 0
+; 0000 0193         {
+; 0000 0194             //if (!get_prev_key_status(SELECT_PLUS_BTN))
+; 0000 0195             //{
+; 0000 0196             switch(i)
+;PCODE: $00000402 VOL: 0
+;PCODE: $00000403 VOL: 0
+; 0000 0197             {
+; 0000 0198                 case 0:
+;PCODE: $00000404 VOL: 0
+;PCODE: $00000405 VOL: 0
+; 0000 0199                   if (j < WATERING_TIME_NUMBER - 1) j++;
+;PCODE: $00000406 VOL: 0
+;PCODE: $00000407 VOL: 0
+;PCODE: $00000408 VOL: 0
+;PCODE: $00000409 VOL: 0
+;PCODE: $0000040A VOL: 0
+; 0000 019A                   else j = 0;
+;PCODE: $0000040B VOL: 0
+;PCODE: $0000040C VOL: 0
+;PCODE: $0000040D VOL: 0
+;PCODE: $0000040E VOL: 0
+; 0000 019B                   hour = w_time[j].hour;
+;PCODE: $0000040F VOL: 0
+;PCODE: $00000410 VOL: 0
+;PCODE: $00000411 VOL: 0
+;PCODE: $00000412 VOL: 0
+;PCODE: $00000413 VOL: 0
+; 0000 019C                   min = w_time[j].min;
+;PCODE: $00000414 VOL: 0
+;PCODE: $00000415 VOL: 0
+;PCODE: $00000416 VOL: 0
+;PCODE: $00000417 VOL: 0
+;PCODE: $00000418 VOL: 0
+; 0000 019D                   mode_on_off = w_time[j].mode_on_off;
+;PCODE: $00000419 VOL: 0
+;PCODE: $0000041A VOL: 0
+;PCODE: $0000041B VOL: 0
+;PCODE: $0000041C VOL: 0
+;PCODE: $0000041D VOL: 0
+;PCODE: $0000041E VOL: 0
+; 0000 019E                   break;
+;PCODE: $0000041F VOL: 0
+; 0000 019F                 case 1:
+;PCODE: $00000420 VOL: 0
+;PCODE: $00000421 VOL: 0
+;PCODE: $00000422 VOL: 0
+; 0000 01A0                   if (hour == 23) hour = 0;
+;PCODE: $00000423 VOL: 0
+;PCODE: $00000424 VOL: 0
+;PCODE: $00000425 VOL: 0
+;PCODE: $00000426 VOL: 0
+;PCODE: $00000427 VOL: 0
+; 0000 01A1                   else hour++;
+;PCODE: $00000428 VOL: 0
+;PCODE: $00000429 VOL: 0
+;PCODE: $0000042A VOL: 0
+;PCODE: $0000042B VOL: 0
+; 0000 01A2                 break;
+;PCODE: $0000042C VOL: 0
+;PCODE: $0000042D VOL: 0
+; 0000 01A3                 case 2:
+;PCODE: $0000042E VOL: 0
+;PCODE: $0000042F VOL: 0
+;PCODE: $00000430 VOL: 0
+; 0000 01A4                   if (min == 59) min = 0;
+;PCODE: $00000431 VOL: 0
+;PCODE: $00000432 VOL: 0
+;PCODE: $00000433 VOL: 0
+;PCODE: $00000434 VOL: 0
+;PCODE: $00000435 VOL: 0
+; 0000 01A5                   else min++;
+;PCODE: $00000436 VOL: 0
+;PCODE: $00000437 VOL: 0
+;PCODE: $00000438 VOL: 0
+;PCODE: $00000439 VOL: 0
+; 0000 01A6                 break;
+;PCODE: $0000043A VOL: 0
+;PCODE: $0000043B VOL: 0
+; 0000 01A7                 case 3:
+;PCODE: $0000043C VOL: 0
+;PCODE: $0000043D VOL: 0
+;PCODE: $0000043E VOL: 0
+; 0000 01A8                   if (mode_on_off) mode_on_off = 0;
+;PCODE: $0000043F VOL: 0
+;PCODE: $00000440 VOL: 0
+;PCODE: $00000441 VOL: 0
+;PCODE: $00000442 VOL: 0
+;PCODE: $00000443 VOL: 0
+; 0000 01A9                   else mode_on_off = 1;
+;PCODE: $00000444 VOL: 0
+;PCODE: $00000445 VOL: 0
+;PCODE: $00000446 VOL: 0
+;PCODE: $00000447 VOL: 0
+; 0000 01AA                 break;
+;PCODE: $00000448 VOL: 0
+;PCODE: $00000449 VOL: 0
+; 0000 01AB                 case 4:
+;PCODE: $0000044A VOL: 0
+;PCODE: $0000044B VOL: 0
+;PCODE: $0000044C VOL: 0
+; 0000 01AC                   ok = 1;
+;PCODE: $0000044D VOL: 0
+;PCODE: $0000044E VOL: 0
+; 0000 01AD                 break;
+;PCODE: $0000044F VOL: 0
+; 0000 01AE             }
+;PCODE: $00000450 VOL: 0
+; 0000 01AF             //}
+; 0000 01B0             delay_ms(300);
+;PCODE: $00000451 VOL: 0
+;PCODE: $00000452 VOL: 0
+;PCODE: $00000453 VOL: 0
+; 0000 01B1         }
+; 0000 01B2         if (get_key_status(SELECT_MINUS_BTN))
+;PCODE: $00000454 VOL: 0
+;PCODE: $00000455 VOL: 0
+;PCODE: $00000456 VOL: 0
+;PCODE: $00000457 VOL: 0
+;PCODE: $00000458 VOL: 0
+;PCODE: $00000459 VOL: 0
+; 0000 01B3         {
+; 0000 01B4             //if (!get_prev_key_status(SELECT_MINUS_BTN))
+; 0000 01B5             //{
+; 0000 01B6             switch (i)
+;PCODE: $0000045A VOL: 0
+;PCODE: $0000045B VOL: 0
+; 0000 01B7             {
+; 0000 01B8                 case 0:
+;PCODE: $0000045C VOL: 0
+;PCODE: $0000045D VOL: 0
+; 0000 01B9                   if (j > 0) j--;
+;PCODE: $0000045E VOL: 0
+;PCODE: $0000045F VOL: 0
+;PCODE: $00000460 VOL: 0
+;PCODE: $00000461 VOL: 0
+;PCODE: $00000462 VOL: 0
+; 0000 01BA                   else j = WATERING_TIME_NUMBER;
+;PCODE: $00000463 VOL: 0
+;PCODE: $00000464 VOL: 0
+;PCODE: $00000465 VOL: 0
+;PCODE: $00000466 VOL: 0
+; 0000 01BB                   hour = w_time[j].hour;
+;PCODE: $00000467 VOL: 0
+;PCODE: $00000468 VOL: 0
+;PCODE: $00000469 VOL: 0
+;PCODE: $0000046A VOL: 0
+;PCODE: $0000046B VOL: 0
+; 0000 01BC                   min = w_time[j].min;
+;PCODE: $0000046C VOL: 0
+;PCODE: $0000046D VOL: 0
+;PCODE: $0000046E VOL: 0
+;PCODE: $0000046F VOL: 0
+;PCODE: $00000470 VOL: 0
+; 0000 01BD                   mode_on_off = w_time[j].mode_on_off;
+;PCODE: $00000471 VOL: 0
+;PCODE: $00000472 VOL: 0
+;PCODE: $00000473 VOL: 0
+;PCODE: $00000474 VOL: 0
+;PCODE: $00000475 VOL: 0
+;PCODE: $00000476 VOL: 0
+; 0000 01BE                   break;
+;PCODE: $00000477 VOL: 0
+; 0000 01BF                 case 1:
+;PCODE: $00000478 VOL: 0
+;PCODE: $00000479 VOL: 0
+;PCODE: $0000047A VOL: 0
+; 0000 01C0                   if (hour == 0) hour = 23;
+;PCODE: $0000047B VOL: 0
+;PCODE: $0000047C VOL: 0
+;PCODE: $0000047D VOL: 0
+;PCODE: $0000047E VOL: 0
+; 0000 01C1                   else hour--;
+;PCODE: $0000047F VOL: 0
+;PCODE: $00000480 VOL: 0
+;PCODE: $00000481 VOL: 0
+;PCODE: $00000482 VOL: 0
+; 0000 01C2                 break;
+;PCODE: $00000483 VOL: 0
+;PCODE: $00000484 VOL: 0
+; 0000 01C3                 case 2:
+;PCODE: $00000485 VOL: 0
+;PCODE: $00000486 VOL: 0
+;PCODE: $00000487 VOL: 0
+; 0000 01C4                   if (min == 0) min = 59;
+;PCODE: $00000488 VOL: 0
+;PCODE: $00000489 VOL: 0
+;PCODE: $0000048A VOL: 0
+;PCODE: $0000048B VOL: 0
+; 0000 01C5                   else min--;
+;PCODE: $0000048C VOL: 0
+;PCODE: $0000048D VOL: 0
+;PCODE: $0000048E VOL: 0
+;PCODE: $0000048F VOL: 0
+; 0000 01C6                 break;
+;PCODE: $00000490 VOL: 0
+;PCODE: $00000491 VOL: 0
+; 0000 01C7                 case 3:
+;PCODE: $00000492 VOL: 0
+;PCODE: $00000493 VOL: 0
+;PCODE: $00000494 VOL: 0
+; 0000 01C8                   if (!mode_on_off) mode_on_off = 1;
+;PCODE: $00000495 VOL: 0
+;PCODE: $00000496 VOL: 0
+;PCODE: $00000497 VOL: 0
+;PCODE: $00000498 VOL: 0
+;PCODE: $00000499 VOL: 0
+; 0000 01C9                   else mode_on_off = 0;
+;PCODE: $0000049A VOL: 0
+;PCODE: $0000049B VOL: 0
+;PCODE: $0000049C VOL: 0
+;PCODE: $0000049D VOL: 0
+; 0000 01CA                 break;
+;PCODE: $0000049E VOL: 0
+;PCODE: $0000049F VOL: 0
+; 0000 01CB                 case 4:
+;PCODE: $000004A0 VOL: 0
+;PCODE: $000004A1 VOL: 0
+;PCODE: $000004A2 VOL: 0
+; 0000 01CC                   ok = 1;
+;PCODE: $000004A3 VOL: 0
+;PCODE: $000004A4 VOL: 0
+; 0000 01CD                 break;
+;PCODE: $000004A5 VOL: 0
+; 0000 01CE             }
+;PCODE: $000004A6 VOL: 0
+; 0000 01CF             // }
+; 0000 01D0            delay_ms(300);
+;PCODE: $000004A7 VOL: 0
+;PCODE: $000004A8 VOL: 0
+;PCODE: $000004A9 VOL: 0
+; 0000 01D1         }
+; 0000 01D2         if(get_key_status(MENU_ENTER_BTN))
+;PCODE: $000004AA VOL: 0
+;PCODE: $000004AB VOL: 0
+;PCODE: $000004AC VOL: 0
+;PCODE: $000004AD VOL: 0
+;PCODE: $000004AE VOL: 0
+;PCODE: $000004AF VOL: 0
+; 0000 01D3         {
+; 0000 01D4             if(!get_prev_key_status(MENU_ENTER_BTN))
+;PCODE: $000004B0 VOL: 0
+;PCODE: $000004B1 VOL: 0
+;PCODE: $000004B2 VOL: 0
+;PCODE: $000004B3 VOL: 0
+;PCODE: $000004B4 VOL: 0
+; 0000 01D5             {
+; 0000 01D6                 lcd_gotoxy(x,1);
+;PCODE: $000004B5 VOL: 0
+;PCODE: $000004B6 VOL: 0
+;PCODE: $000004B7 VOL: 0
+;PCODE: $000004B8 VOL: 0
+; 0000 01D7                 lcd_putsf("  ");
+;PCODE: $000004B9 VOL: 0
+;PCODE: $000004BA VOL: 0
+;PCODE: $000004BB VOL: 0
+;PCODE: $000004BC VOL: 0
+; 0000 01D8                 if (i == 4)
+;PCODE: $000004BD VOL: 0
+;PCODE: $000004BE VOL: 0
+;PCODE: $000004BF VOL: 0
+; 0000 01D9                 {
+; 0000 01DA                     i = 0;
+;PCODE: $000004C0 VOL: 0
+;PCODE: $000004C1 VOL: 0
+; 0000 01DB                     x = 0;
+;PCODE: $000004C2 VOL: 0
+;PCODE: $000004C3 VOL: 0
+; 0000 01DC                 }
+; 0000 01DD                 else
+;PCODE: $000004C4 VOL: 0
+;PCODE: $000004C5 VOL: 0
+; 0000 01DE                 {
+; 0000 01DF                   if (x == 9)
+;PCODE: $000004C6 VOL: 0
+;PCODE: $000004C7 VOL: 0
+;PCODE: $000004C8 VOL: 0
+; 0000 01E0                     x += 4;
+;PCODE: $000004C9 VOL: 0
+;PCODE: $000004CA VOL: 0
+; 0000 01E1                   else x += 3;
+;PCODE: $000004CB VOL: 0
+;PCODE: $000004CC VOL: 0
+;PCODE: $000004CD VOL: 0
+;PCODE: $000004CE VOL: 0
+; 0000 01E2                   i++;
+;PCODE: $000004CF VOL: 0
+;PCODE: $000004D0 VOL: 0
+;PCODE: $000004D1 VOL: 0
+; 0000 01E3                 }
+;PCODE: $000004D2 VOL: 0
+; 0000 01E4            }
+; 0000 01E5        }
+;PCODE: $000004D3 VOL: 0
+; 0000 01E6        if(get_key_status(EXIT_BTN))
+;PCODE: $000004D4 VOL: 0
+;PCODE: $000004D5 VOL: 0
+;PCODE: $000004D6 VOL: 0
+;PCODE: $000004D7 VOL: 0
+;PCODE: $000004D8 VOL: 0
+;PCODE: $000004D9 VOL: 0
+; 0000 01E7          if(!get_prev_key_status(EXIT_BTN))
+;PCODE: $000004DA VOL: 0
+;PCODE: $000004DB VOL: 0
+;PCODE: $000004DC VOL: 0
+;PCODE: $000004DD VOL: 0
+;PCODE: $000004DE VOL: 0
+; 0000 01E8          {
+; 0000 01E9             delay_ms(300);
+;PCODE: $000004DF VOL: 0
+;PCODE: $000004E0 VOL: 0
+;PCODE: $000004E1 VOL: 0
+; 0000 01EA             PREV_BTN_PIN = BTN_PIN;
+;PCODE: $000004E2 VOL: 0
+;PCODE: $000004E3 VOL: 0
+; 0000 01EB             return;
+;PCODE: $000004E4 VOL: 0
+;PCODE: $000004E5 VOL: 0
+;PCODE: $000004E6 VOL: 0
+; 0000 01EC          }
+; 0000 01ED     }
+;PCODE: $000004E7 VOL: 0
+;PCODE: $000004E8 VOL: 0
+;PCODE: $000004E9 VOL: 0
+;PCODE: $000004EA VOL: 0
+; 0000 01EE     w_time[j].hour = hour;
+;PCODE: $000004EB VOL: 0
+;PCODE: $000004EC VOL: 0
+;PCODE: $000004ED VOL: 0
+;PCODE: $000004EE VOL: 0
+; 0000 01EF     w_time[j].min = min;
+;PCODE: $000004EF VOL: 0
+;PCODE: $000004F0 VOL: 0
+;PCODE: $000004F1 VOL: 0
+;PCODE: $000004F2 VOL: 0
+;PCODE: $000004F3 VOL: 0
+; 0000 01F0     w_time[j].mode_on_off = mode_on_off;
+;PCODE: $000004F4 VOL: 0
+;PCODE: $000004F5 VOL: 0
+;PCODE: $000004F6 VOL: 0
+;PCODE: $000004F7 VOL: 0
+;PCODE: $000004F8 VOL: 0
+;PCODE: $000004F9 VOL: 0
+; 0000 01F1 }
+;PCODE: $000004FA VOL: 0
+;PCODE: $000004FB VOL: 0
+;PCODE: $000004FC VOL: 0
+;PCODE: $000004FD VOL: 0
+
+	.DSEG
+_0x78:
+	.BYTE 0x17
+;
+;
+;void main_menu(void)
+; 0000 01F5 {
+
+	.CSEG
+;PCODE: $000004FE VOL: 0
+;PCODE: $000004FF VOL: 0
+; 0000 01F6     char *menu_items[8]={"DATE", "TIME", "WATERING", "TEMPERATURE",
+; 0000 01F7         "HUMIDITY", "SOIL MOISTURE", "LIGHT INTENSITY","EXIT"};
+; 0000 01F8     int pos[] = {6, 6, 4, 2, 4, 2, 0, 6};
+; 0000 01F9    /* char *menu_items[8]={"ƒ¿“¿", "◊¿—", "œŒÀ»¬", "“≈Ãœ≈–¿“”–¿",
+; 0000 01FA         "¬ŒÀŒ√I—“‹", "¬ŒÀŒ√I—“‹ √–”Õ“”", "Œ—¬I“À≈ÕÕﬂ","¬»’Iƒ"};
+; 0000 01FB     int pos[] = {6, 6, 5, 2, 4, 0, 3, 5};*/
+; 0000 01FC     char title[] = "** Main Menu **";
+; 0000 01FD     //char title[] = "* √ÓÎÓ‚ÌÂ ÃÂÌ˛ *";
+; 0000 01FE     unsigned char i = 0;
+; 0000 01FF 
+; 0000 0200     while(1)
+;PCODE: $00000500 VOL: 0
+;PCODE: $00000501 VOL: 0
+;PCODE: $00000502 VOL: 0
+;PCODE: $00000503 VOL: 0
+;PCODE: $00000504 VOL: 0
+;PCODE: $00000505 VOL: 0
+;	menu_items -> Y+33
+;	pos -> Y+17
+;	title -> Y+1
+;	i -> R17
+;PCODE: $00000506 VOL: 0
+;PCODE: $00000507 VOL: 0
+;PCODE: $00000508 VOL: 0
+; 0000 0201     {
+; 0000 0202         PREV_BTN_PIN = BTN_PIN;
+;PCODE: $00000509 VOL: 0
+;PCODE: $0000050A VOL: 0
+; 0000 0203         lcd_gotoxy(0,0);
+;PCODE: $0000050B VOL: 0
+;PCODE: $0000050C VOL: 0
+;PCODE: $0000050D VOL: 0
+;PCODE: $0000050E VOL: 0
+;PCODE: $0000050F VOL: 0
+; 0000 0204         lcd_puts(title);
+;PCODE: $00000510 VOL: 0
+;PCODE: $00000511 VOL: 0
+;PCODE: $00000512 VOL: 0
+; 0000 0205         lcd_gotoxy(pos[i],1);
+;PCODE: $00000513 VOL: 0
+;PCODE: $00000514 VOL: 0
+;PCODE: $00000515 VOL: 0
+;PCODE: $00000516 VOL: 0
+;PCODE: $00000517 VOL: 0
+;PCODE: $00000518 VOL: 0
+;PCODE: $00000519 VOL: 0
+;PCODE: $0000051A VOL: 0
+;PCODE: $0000051B VOL: 0
+;PCODE: $0000051C VOL: 0
+; 0000 0206         lcd_puts(menu_items[i]);
+;PCODE: $0000051D VOL: 0
+;PCODE: $0000051E VOL: 0
+;PCODE: $0000051F VOL: 0
+;PCODE: $00000520 VOL: 0
+;PCODE: $00000521 VOL: 0
+;PCODE: $00000522 VOL: 0
+;PCODE: $00000523 VOL: 0
+;PCODE: $00000524 VOL: 0
+; 0000 0207         if(get_key_status(SELECT_PLUS_BTN))
+;PCODE: $00000525 VOL: 0
+;PCODE: $00000526 VOL: 0
+;PCODE: $00000527 VOL: 0
+;PCODE: $00000528 VOL: 0
+;PCODE: $00000529 VOL: 0
+; 0000 0208         {
+; 0000 0209             if(!get_prev_key_status(SELECT_PLUS_BTN))
+;PCODE: $0000052A VOL: 0
+;PCODE: $0000052B VOL: 0
+;PCODE: $0000052C VOL: 0
+;PCODE: $0000052D VOL: 0
+;PCODE: $0000052E VOL: 0
+; 0000 020A             {
+; 0000 020B                 if(i == 7) i = 0;
+;PCODE: $0000052F VOL: 0
+;PCODE: $00000530 VOL: 0
+;PCODE: $00000531 VOL: 0
+;PCODE: $00000532 VOL: 0
+;PCODE: $00000533 VOL: 0
+; 0000 020C                 else i++;
+;PCODE: $00000534 VOL: 0
+;PCODE: $00000535 VOL: 0
+;PCODE: $00000536 VOL: 0
+;PCODE: $00000537 VOL: 0
+; 0000 020D                 lcd_clear();
+;PCODE: $00000538 VOL: 0
+;PCODE: $00000539 VOL: 0
+; 0000 020E             }
+; 0000 020F         }
+;PCODE: $0000053A VOL: 0
+; 0000 0210         if(get_key_status(SELECT_MINUS_BTN))
+;PCODE: $0000053B VOL: 0
+;PCODE: $0000053C VOL: 0
+;PCODE: $0000053D VOL: 0
+;PCODE: $0000053E VOL: 0
+;PCODE: $0000053F VOL: 0
+;PCODE: $00000540 VOL: 0
+; 0000 0211         {
+; 0000 0212             if (!get_prev_key_status(SELECT_MINUS_BTN))
+;PCODE: $00000541 VOL: 0
+;PCODE: $00000542 VOL: 0
+;PCODE: $00000543 VOL: 0
+;PCODE: $00000544 VOL: 0
+;PCODE: $00000545 VOL: 0
+; 0000 0213             {
+; 0000 0214                 if (i == 0) i = 7;
+;PCODE: $00000546 VOL: 0
+;PCODE: $00000547 VOL: 0
+;PCODE: $00000548 VOL: 0
+;PCODE: $00000549 VOL: 0
+; 0000 0215                 else i--;
+;PCODE: $0000054A VOL: 0
+;PCODE: $0000054B VOL: 0
+;PCODE: $0000054C VOL: 0
+;PCODE: $0000054D VOL: 0
+; 0000 0216                 lcd_clear();
+;PCODE: $0000054E VOL: 0
+;PCODE: $0000054F VOL: 0
+; 0000 0217             }
+; 0000 0218         }
+;PCODE: $00000550 VOL: 0
+; 0000 0219         if(get_key_status(MENU_ENTER_BTN))
+;PCODE: $00000551 VOL: 0
+;PCODE: $00000552 VOL: 0
+;PCODE: $00000553 VOL: 0
+;PCODE: $00000554 VOL: 0
+;PCODE: $00000555 VOL: 0
+;PCODE: $00000556 VOL: 0
+; 0000 021A             if(!get_prev_key_status(MENU_ENTER_BTN))
+;PCODE: $00000557 VOL: 0
+;PCODE: $00000558 VOL: 0
+;PCODE: $00000559 VOL: 0
+;PCODE: $0000055A VOL: 0
+;PCODE: $0000055B VOL: 0
+; 0000 021B             {
+; 0000 021C                 lcd_clear();
+;PCODE: $0000055C VOL: 0
+; 0000 021D                 switch(i)
+;PCODE: $0000055D VOL: 0
+;PCODE: $0000055E VOL: 0
+; 0000 021E                 {
+; 0000 021F                     case 0: set_date(); break; // date
+;PCODE: $0000055F VOL: 0
+;PCODE: $00000560 VOL: 0
+;PCODE: $00000561 VOL: 0
+;PCODE: $00000562 VOL: 0
+; 0000 0220                     case 1: set_time(); break; // time
+;PCODE: $00000563 VOL: 0
+;PCODE: $00000564 VOL: 0
+;PCODE: $00000565 VOL: 0
+;PCODE: $00000566 VOL: 0
+;PCODE: $00000567 VOL: 0
+; 0000 0221                     case 2: set_watering(); break; // watering
+;PCODE: $00000568 VOL: 0
+;PCODE: $00000569 VOL: 0
+;PCODE: $0000056A VOL: 0
+;PCODE: $0000056B VOL: 0
+;PCODE: $0000056C VOL: 0
+; 0000 0222                     case 3: set_values(0, &temp); break; // temperature
+;PCODE: $0000056D VOL: 0
+;PCODE: $0000056E VOL: 0
+;PCODE: $0000056F VOL: 0
+;PCODE: $00000570 VOL: 0
+;PCODE: $00000571 VOL: 0
+;PCODE: $00000572 VOL: 0
+;PCODE: $00000573 VOL: 0
+;PCODE: $00000574 VOL: 0
+;PCODE: $00000575 VOL: 0
+; 0000 0223                     case 4: set_values(1, &hum); break; // humidity
+;PCODE: $00000576 VOL: 0
+;PCODE: $00000577 VOL: 0
+;PCODE: $00000578 VOL: 0
+;PCODE: $00000579 VOL: 0
+;PCODE: $0000057A VOL: 0
+;PCODE: $0000057B VOL: 0
+;PCODE: $0000057C VOL: 0
+;PCODE: $0000057D VOL: 0
+;PCODE: $0000057E VOL: 0
+; 0000 0224                     case 5: set_values(2,&soil); break; // soil moisture
+;PCODE: $0000057F VOL: 0
+;PCODE: $00000580 VOL: 0
+;PCODE: $00000581 VOL: 0
+;PCODE: $00000582 VOL: 0
+;PCODE: $00000583 VOL: 0
+;PCODE: $00000584 VOL: 0
+;PCODE: $00000585 VOL: 0
+;PCODE: $00000586 VOL: 0
+;PCODE: $00000587 VOL: 0
+; 0000 0225                     case 6: set_values(3, &light); break;
+;PCODE: $00000588 VOL: 0
+;PCODE: $00000589 VOL: 0
+;PCODE: $0000058A VOL: 0
+;PCODE: $0000058B VOL: 0
+;PCODE: $0000058C VOL: 0
+;PCODE: $0000058D VOL: 0
+;PCODE: $0000058E VOL: 0
+;PCODE: $0000058F VOL: 0
+;PCODE: $00000590 VOL: 0
+; 0000 0226                     case 7: return;
+;PCODE: $00000591 VOL: 0
+;PCODE: $00000592 VOL: 0
+;PCODE: $00000593 VOL: 0
+;PCODE: $00000594 VOL: 0
+;PCODE: $00000595 VOL: 0
+;PCODE: $00000596 VOL: 0
+;PCODE: $00000597 VOL: 0
+; 0000 0227                     default: break;
+;PCODE: $00000598 VOL: 0
+;PCODE: $00000599 VOL: 0
+; 0000 0228             }
+;PCODE: $0000059A VOL: 0
+; 0000 0229             lcd_clear();
+;PCODE: $0000059B VOL: 0
+; 0000 022A       }
+; 0000 022B       if (get_key_status(EXIT_BTN))
+;PCODE: $0000059C VOL: 0
+;PCODE: $0000059D VOL: 0
+;PCODE: $0000059E VOL: 0
+;PCODE: $0000059F VOL: 0
+;PCODE: $000005A0 VOL: 0
+;PCODE: $000005A1 VOL: 0
+;PCODE: $000005A2 VOL: 0
+; 0000 022C         if (!get_prev_key_status(EXIT_BTN))
+;PCODE: $000005A3 VOL: 0
+;PCODE: $000005A4 VOL: 0
+;PCODE: $000005A5 VOL: 0
+;PCODE: $000005A6 VOL: 0
+;PCODE: $000005A7 VOL: 0
+; 0000 022D         {
+; 0000 022E            return;
+;PCODE: $000005A8 VOL: 0
+;PCODE: $000005A9 VOL: 0
+;PCODE: $000005AA VOL: 0
+;PCODE: $000005AB VOL: 0
+; 0000 022F         }
+; 0000 0230 
+; 0000 0231     }
+;PCODE: $000005AC VOL: 0
+;PCODE: $000005AD VOL: 0
+;PCODE: $000005AE VOL: 0
+;PCODE: $000005AF VOL: 0
+; 0000 0232 }
+;PCODE: $000005B0 VOL: 0
+;PCODE: $000005B1 VOL: 0
+;PCODE: $000005B2 VOL: 0
+;PCODE: $000005B3 VOL: 0
+;PCODE: $000005B4 VOL: 0
+
+	.DSEG
+_0xA7:
+	.BYTE 0x4B
+;
+;void main(void)
+; 0000 0235 {
+
+	.CSEG
+;PCODE: $000005B5 VOL: 0
+; 0000 0236   /* program that shows how to use SHTXX, DS18B20 functions and to display information on LCD */
+; 0000 0237 
+; 0000 0238   value humi_val = {0}, temp_val = {0};
+; 0000 0239   float temp_ds = 0, dew_point = 0;
+; 0000 023A   unsigned int soil_val = 0, light_val = 0;
+; 0000 023B   unsigned char error, checksum, value = 1;
+; 0000 023C   unsigned int vin, start;
+; 0000 023D   unsigned char hour, min, sec, wd;
+; 0000 023E   //unsigned char date, month, year;
+; 0000 023F   char *weekdays[7]={"Sun","Mon","Tue","Wed","Thr","Fri","Sat"};
+; 0000 0240   //char *weekdays[7]={"Õ‰.","œÌ.","¬Ú.","—.","◊Ú.","œÚ.","—·."};
+; 0000 0241   //char *monthes[]={"Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"};
+; 0000 0242   //char *monthes[]={"—i˜.","À˛Ú.","¡Â."," ‚iÚ.","“‡‚.","◊Â‚.","ÀËÔ.","—ÂÔ.","¬Â.","∆Ó‚Ú.","ÀËÒÚ.","√Û‰."};
+; 0000 0243 
+; 0000 0244   //initADC();
+; 0000 0245   sht_init();
+;PCODE: $000005B6 VOL: 0
+;PCODE: $000005B7 VOL: 0
+;PCODE: $000005B8 VOL: 0
+;PCODE: $000005B9 VOL: 0
+;PCODE: $000005BA VOL: 0
+;	humi_val -> Y+35
+;	temp_val -> Y+31
+;	temp_ds -> Y+27
+;	dew_point -> Y+23
+;	soil_val -> R16,R17
+;	light_val -> R18,R19
+;	error -> R21
+;	checksum -> R20
+;	value -> Y+22
+;	vin -> Y+20
+;	start -> Y+18
+;	hour -> Y+17
+;	min -> Y+16
+;	sec -> Y+15
+;	wd -> Y+14
+;	weekdays -> Y+0
+;PCODE: $000005BB VOL: 0
+;PCODE: $000005BC VOL: 0
+;PCODE: $000005BD VOL: 0
+;PCODE: $000005BE VOL: 0
+;PCODE: $000005BF VOL: 0
+; 0000 0246   s_connectionreset();
+;PCODE: $000005C0 VOL: 0
+; 0000 0247   therm_init(-55, 125, THERM_9BIT_RES);
+;PCODE: $000005C1 VOL: 0
+;PCODE: $000005C2 VOL: 0
+;PCODE: $000005C3 VOL: 0
+;PCODE: $000005C4 VOL: 0
+;PCODE: $000005C5 VOL: 0
+;PCODE: $000005C6 VOL: 0
+;PCODE: $000005C7 VOL: 0
+; 0000 0248   i2c_init();  // I2C Bus initialization
+;PCODE: $000005C8 VOL: 0
+; 0000 0249   // DS1307 Real Time Clock initialization
+; 0000 024A   rtc_init(0,1,0);  // Square wave output on pin SQW/OUT: Off // SQW/OUT pin state: 0
+;PCODE: $000005C9 VOL: 0
+;PCODE: $000005CA VOL: 0
+;PCODE: $000005CB VOL: 0
+;PCODE: $000005CC VOL: 0
+;PCODE: $000005CD VOL: 0
+;PCODE: $000005CE VOL: 0
+;PCODE: $000005CF VOL: 0
+; 0000 024B  // start = rtc_read(0)&0x80;
+; 0000 024C  // if (start)
+; 0000 024D   //  rtc_write(0,0x00);  //start clock
+; 0000 024E 
+; 0000 024F   //LCD initialization
+; 0000 0250   lcd_init(16);
+;PCODE: $000005D0 VOL: 0
+;PCODE: $000005D1 VOL: 0
+;PCODE: $000005D2 VOL: 0
+; 0000 0251   lcd_clear();
+;PCODE: $000005D3 VOL: 0
+; 0000 0252   //lcd_gotoxy(2,0);
+; 0000 0253   //lcd_putsf("Microclimate");
+; 0000 0254   //lcd_gotoxy(1,1);
+; 0000 0255   //lcd_putsf("Control System");
+; 0000 0256   lcd_gotoxy(4,0);
+;PCODE: $000005D4 VOL: 0
+;PCODE: $000005D5 VOL: 0
+;PCODE: $000005D6 VOL: 0
+;PCODE: $000005D7 VOL: 0
+;PCODE: $000005D8 VOL: 0
+; 0000 0257   lcd_putsf("—»—“≈Ã¿");
+;PCODE: $000005D9 VOL: 0
+;PCODE: $000005DA VOL: 0
+;PCODE: $000005DB VOL: 0
+;PCODE: $000005DC VOL: 0
+; 0000 0258   lcd_gotoxy(3,1);
+;PCODE: $000005DD VOL: 0
+;PCODE: $000005DE VOL: 0
+;PCODE: $000005DF VOL: 0
+;PCODE: $000005E0 VOL: 0
+;PCODE: $000005E1 VOL: 0
+; 0000 0259   lcd_putsf("”œ–¿¬ÀIÕÕﬂ");
+;PCODE: $000005E2 VOL: 0
+;PCODE: $000005E3 VOL: 0
+;PCODE: $000005E4 VOL: 0
+;PCODE: $000005E5 VOL: 0
+; 0000 025A   delay_ms(2000);
+;PCODE: $000005E6 VOL: 0
+;PCODE: $000005E7 VOL: 0
+;PCODE: $000005E8 VOL: 0
+; 0000 025B   lcd_clear();
+;PCODE: $000005E9 VOL: 0
+; 0000 025C   lcd_gotoxy(1,0);
+;PCODE: $000005EA VOL: 0
+;PCODE: $000005EB VOL: 0
+;PCODE: $000005EC VOL: 0
+;PCODE: $000005ED VOL: 0
+;PCODE: $000005EE VOL: 0
+; 0000 025D   lcd_putsf("ÃI –Œ ÀIÃ¿“ŒÃ");
+;PCODE: $000005EF VOL: 0
+;PCODE: $000005F0 VOL: 0
+;PCODE: $000005F1 VOL: 0
+;PCODE: $000005F2 VOL: 0
+; 0000 025E   lcd_gotoxy(3,1);
+;PCODE: $000005F3 VOL: 0
+;PCODE: $000005F4 VOL: 0
+;PCODE: $000005F5 VOL: 0
+;PCODE: $000005F6 VOL: 0
+;PCODE: $000005F7 VOL: 0
+; 0000 025F   lcd_putsf("¬ “≈œÀ»÷I");
+;PCODE: $000005F8 VOL: 0
+;PCODE: $000005F9 VOL: 0
+;PCODE: $000005FA VOL: 0
+;PCODE: $000005FB VOL: 0
+; 0000 0260   delay_ms(2000);
+;PCODE: $000005FC VOL: 0
+;PCODE: $000005FD VOL: 0
+;PCODE: $000005FE VOL: 0
+; 0000 0261   lcd_clear();
+;PCODE: $000005FF VOL: 0
+; 0000 0262   lcd_gotoxy(2,0);
+;PCODE: $00000600 VOL: 0
+;PCODE: $00000601 VOL: 0
+;PCODE: $00000602 VOL: 0
+;PCODE: $00000603 VOL: 0
+;PCODE: $00000604 VOL: 0
+; 0000 0263   lcd_putsf("Andriy Halakh");
+;PCODE: $00000605 VOL: 0
+;PCODE: $00000606 VOL: 0
+;PCODE: $00000607 VOL: 0
+;PCODE: $00000608 VOL: 0
+; 0000 0264   //lcd_putsf("¿. √‡Î‡ı");
+; 0000 0265   lcd_gotoxy(4,1);
+;PCODE: $00000609 VOL: 0
+;PCODE: $0000060A VOL: 0
+;PCODE: $0000060B VOL: 0
+;PCODE: $0000060C VOL: 0
+;PCODE: $0000060D VOL: 0
+; 0000 0266   lcd_putsf("(C) 2017");
+;PCODE: $0000060E VOL: 0
+;PCODE: $0000060F VOL: 0
+;PCODE: $00000610 VOL: 0
+;PCODE: $00000611 VOL: 0
+; 0000 0267   delay_ms(2000);
+;PCODE: $00000612 VOL: 0
+;PCODE: $00000613 VOL: 0
+;PCODE: $00000614 VOL: 0
+; 0000 0268   lcd_clear();
+;PCODE: $00000615 VOL: 0
+; 0000 0269  //set SHTXX sensor resolution for temperature 12 bit and for humidity 8 bit
+; 0000 026A   s_write_statusreg(&value);
+;PCODE: $00000616 VOL: 0
+;PCODE: $00000617 VOL: 0
+;PCODE: $00000618 VOL: 0
+; 0000 026B   s_read_statusreg(&value, &checksum);
+;PCODE: $00000619 VOL: 0
+;PCODE: $0000061A VOL: 0
+;PCODE: $0000061B VOL: 0
+;PCODE: $0000061C VOL: 0
+;PCODE: $0000061D VOL: 0
+;PCODE: $0000061E VOL: 0
+;PCODE: $0000061F VOL: 0
+; 0000 026C 
+; 0000 026D   REL1_DDR|=(1<<REL1);  // REL1 0x20
+;PCODE: $00000620 VOL: 0
+;PCODE: $00000621 VOL: 0
+; 0000 026E   REL1_PORT&=~(1<<REL1); // REL1 - off 0xdf
+;PCODE: $00000622 VOL: 0
+;PCODE: $00000623 VOL: 0
+; 0000 026F   REL2_DDR|=(1<<REL2);  // REL2 0x40
+;PCODE: $00000624 VOL: 0
+;PCODE: $00000625 VOL: 0
+; 0000 0270   REL2_PORT|=(1<<REL2); // REL2 - off 0xbf
+;PCODE: $00000626 VOL: 0
+;PCODE: $00000627 VOL: 0
+; 0000 0271   REL3_DDR|=(1<<REL3);  // REL3 0x80
+;PCODE: $00000628 VOL: 0
+;PCODE: $00000629 VOL: 0
+; 0000 0272   REL3_PORT&=~(1<<REL3); // REL3 - off 0x7f
+;PCODE: $0000062A VOL: 0
+;PCODE: $0000062B VOL: 0
+; 0000 0273 
+; 0000 0274   while(1)
+;PCODE: $0000062C VOL: 0
+; 0000 0275   {
+; 0000 0276     therm_read_temperature(&temp_ds); //measures temperature from DS18B20
+;PCODE: $0000062D VOL: 0
+;PCODE: $0000062E VOL: 0
+;PCODE: $0000062F VOL: 0
+; 0000 0277     error = 0;
+;PCODE: $00000630 VOL: 0
+;PCODE: $00000631 VOL: 0
+; 0000 0278     error += s_measure((unsigned char*) &humi_val.i, &checksum,HUMI);  //measure humidity
+;PCODE: $00000632 VOL: 0
+;PCODE: $00000633 VOL: 0
+;PCODE: $00000634 VOL: 0
+;PCODE: $00000635 VOL: 0
+;PCODE: $00000636 VOL: 0
+;PCODE: $00000637 VOL: 0
+;PCODE: $00000638 VOL: 0
+;PCODE: $00000639 VOL: 0
+;PCODE: $0000063A VOL: 0
+;PCODE: $0000063B VOL: 0
+;PCODE: $0000063C VOL: 0
+; 0000 0279     error += s_measure((unsigned char*) &temp_val.i, &checksum,TEMP);  //measure temperature
+;PCODE: $0000063D VOL: 0
+;PCODE: $0000063E VOL: 0
+;PCODE: $0000063F VOL: 0
+;PCODE: $00000640 VOL: 0
+;PCODE: $00000641 VOL: 0
+;PCODE: $00000642 VOL: 0
+;PCODE: $00000643 VOL: 0
+;PCODE: $00000644 VOL: 0
+;PCODE: $00000645 VOL: 0
+;PCODE: $00000646 VOL: 0
+;PCODE: $00000647 VOL: 0
+; 0000 027A     if (error!=0)
+;PCODE: $00000648 VOL: 0
+;PCODE: $00000649 VOL: 0
+; 0000 027B       s_connectionreset(); //in case of an error: connection reset
+;PCODE: $0000064A VOL: 0
+; 0000 027C     else
+;PCODE: $0000064B VOL: 0
+;PCODE: $0000064C VOL: 0
+; 0000 027D     {
+; 0000 027E       humi_val.f = (float)humi_val.i;  //converts integer to float
+;PCODE: $0000064D VOL: 0
+;PCODE: $0000064E VOL: 0
+;PCODE: $0000064F VOL: 0
+; 0000 027F       temp_val.f = (float)temp_val.i;   //converts integer to float
+;PCODE: $00000650 VOL: 0
+;PCODE: $00000651 VOL: 0
+;PCODE: $00000652 VOL: 0
+; 0000 0280       calc_sth11(&humi_val.f, &temp_val.f); //calculate humidity, temperature
+;PCODE: $00000653 VOL: 0
+;PCODE: $00000654 VOL: 0
+;PCODE: $00000655 VOL: 0
+;PCODE: $00000656 VOL: 0
+;PCODE: $00000657 VOL: 0
+; 0000 0281       dew_point = calc_dewpoint(humi_val.f, temp_val.f); //calculate dew point
+;PCODE: $00000658 VOL: 0
+;PCODE: $00000659 VOL: 0
+;PCODE: $0000065A VOL: 0
+;PCODE: $0000065B VOL: 0
+;PCODE: $0000065C VOL: 0
+;PCODE: $0000065D VOL: 0
+; 0000 0282 
+; 0000 0283       sprintf(lcd_buffer,"%+3.1f%cC %3.1f%% RH ", temp_ds,
+; 0000 0284       0xdf, humi_val.f);
+;PCODE: $0000065E VOL: 0
+;PCODE: $0000065F VOL: 0
+;PCODE: $00000660 VOL: 0
+;PCODE: $00000661 VOL: 0
+;PCODE: $00000662 VOL: 0
+;PCODE: $00000663 VOL: 0
+;PCODE: $00000664 VOL: 0
+;PCODE: $00000665 VOL: 0
+;PCODE: $00000666 VOL: 0
+;PCODE: $00000667 VOL: 0
+;PCODE: $00000668 VOL: 0
+;PCODE: $00000669 VOL: 0
+;PCODE: $0000066A VOL: 0
+;PCODE: $0000066B VOL: 0
+;PCODE: $0000066C VOL: 0
+; 0000 0285       lcd_gotoxy(0,0);
+;PCODE: $0000066D VOL: 0
+;PCODE: $0000066E VOL: 0
+;PCODE: $0000066F VOL: 0
+;PCODE: $00000670 VOL: 0
+;PCODE: $00000671 VOL: 0
+; 0000 0286       lcd_puts(lcd_buffer);
+;PCODE: $00000672 VOL: 0
+;PCODE: $00000673 VOL: 0
+;PCODE: $00000674 VOL: 0
+; 0000 0287       sprintf(lcd_buffer,"%+d%cC ",(int)temp_val.f, 0xdf);
+;PCODE: $00000675 VOL: 0
+;PCODE: $00000676 VOL: 0
+;PCODE: $00000677 VOL: 0
+;PCODE: $00000678 VOL: 0
+;PCODE: $00000679 VOL: 0
+;PCODE: $0000067A VOL: 0
+;PCODE: $0000067B VOL: 0
+;PCODE: $0000067C VOL: 0
+;PCODE: $0000067D VOL: 0
+;PCODE: $0000067E VOL: 0
+;PCODE: $0000067F VOL: 0
+;PCODE: $00000680 VOL: 0
+;PCODE: $00000681 VOL: 0
+;PCODE: $00000682 VOL: 0
+;PCODE: $00000683 VOL: 0
+; 0000 0288       lcd_gotoxy(0,1);
+;PCODE: $00000684 VOL: 0
+;PCODE: $00000685 VOL: 0
+;PCODE: $00000686 VOL: 0
+;PCODE: $00000687 VOL: 0
+;PCODE: $00000688 VOL: 0
+; 0000 0289       lcd_puts(lcd_buffer);
+;PCODE: $00000689 VOL: 0
+;PCODE: $0000068A VOL: 0
+;PCODE: $0000068B VOL: 0
+; 0000 028A     }
+;PCODE: $0000068C VOL: 0
+; 0000 028B     // check temperature value
+; 0000 028C     if (temp_ds > temp.max)
+;PCODE: $0000068D VOL: 0
+;PCODE: $0000068E VOL: 0
+;PCODE: $0000068F VOL: 0
+;PCODE: $00000690 VOL: 0
+;PCODE: $00000691 VOL: 0
+;PCODE: $00000692 VOL: 0
+; 0000 028D     {
+; 0000 028E        REL1_PORT|=0x20;
+;PCODE: $00000693 VOL: 0
+;PCODE: $00000694 VOL: 0
+; 0000 028F     }
+; 0000 0290     else //if (temp_ds < temp.min)
+;PCODE: $00000695 VOL: 0
+;PCODE: $00000696 VOL: 0
+; 0000 0291     {
+; 0000 0292      // REL1_PORT&=0xdf;
+; 0000 0293     }
+;PCODE: $00000697 VOL: 0
+; 0000 0294     // check humidity value
+; 0000 0295     if (humi_val.f < hum.min)
+;PCODE: $00000698 VOL: 0
+;PCODE: $00000699 VOL: 0
+;PCODE: $0000069A VOL: 0
+;PCODE: $0000069B VOL: 0
+;PCODE: $0000069C VOL: 0
+; 0000 0296     {
+; 0000 0297       REL2_PORT|=0x40;
+;PCODE: $0000069D VOL: 0
+;PCODE: $0000069E VOL: 0
+; 0000 0298     }
+; 0000 0299     else //if (humi_val.f > hum.max)
+;PCODE: $0000069F VOL: 0
+;PCODE: $000006A0 VOL: 0
+; 0000 029A     {
+; 0000 029B       //REL2_PORT&=0xbf;
+; 0000 029C     }
+;PCODE: $000006A1 VOL: 0
+; 0000 029D     // check soil moisture value
+; 0000 029E     /*if (soil_val < soil.min)
+; 0000 029F     {
+; 0000 02A0         REL2_PORT|=0x40;
+; 0000 02A1     }
+; 0000 02A2     else //if (soil_val > soil.max)
+; 0000 02A3     {
+; 0000 02A4         REL2_PORT&=0xbf;
+; 0000 02A5     }*/
+; 0000 02A6     // check light intensity value
+; 0000 02A7     if (light_val < light.min)
+;PCODE: $000006A2 VOL: 0
+;PCODE: $000006A3 VOL: 0
+;PCODE: $000006A4 VOL: 0
+; 0000 02A8     {
+; 0000 02A9         REL3_PORT|=0x80;
+;PCODE: $000006A5 VOL: 0
+;PCODE: $000006A6 VOL: 0
+; 0000 02AA     }
+; 0000 02AB     else //if (light_val > light.max)
+;PCODE: $000006A7 VOL: 0
+;PCODE: $000006A8 VOL: 0
+; 0000 02AC     {
+; 0000 02AD 	   // REL3_PORT&=0x7f;
+; 0000 02AE     }
+;PCODE: $000006A9 VOL: 0
+; 0000 02AF     REL2_PORT|=0x40;
+;PCODE: $000006AA VOL: 0
+;PCODE: $000006AB VOL: 0
+; 0000 02B0     /*vin=readADC(5); //measure pressure ADC5 pin
+; 0000 02B1     pressure=press_m(vin); //calculate pressure
+; 0000 02B2     //print pressure from MPX4115
+; 0000 02B3     sprintf(lcd_buffer,"%uÍœ‡ %.1f‡ÚÏ ",pressure, (pressure/101.325));
+; 0000 02B4     lcd_goto_xy(2,3);
+; 0000 02B5     lcd_str(lcd_buffer);*/
+; 0000 02B6     rtc_get_time(&hour,&min,&sec);//, &wd);
+;PCODE: $000006AC VOL: 0
+;PCODE: $000006AD VOL: 0
+;PCODE: $000006AE VOL: 0
+;PCODE: $000006AF VOL: 0
+;PCODE: $000006B0 VOL: 0
+;PCODE: $000006B1 VOL: 0
+;PCODE: $000006B2 VOL: 0
+; 0000 02B7     //rtc_get_date(&date,&month,&year);
+; 0000 02B8     //print time
+; 0000 02B9     sprintf(lcd_buffer, "%u%u:%u%u %s", hour/10,hour%10, min/10,min%10, weekdays[0]);//[wd-1]);
+;PCODE: $000006B3 VOL: 0
+;PCODE: $000006B4 VOL: 0
+;PCODE: $000006B5 VOL: 0
+;PCODE: $000006B6 VOL: 0
+;PCODE: $000006B7 VOL: 0
+;PCODE: $000006B8 VOL: 0
+;PCODE: $000006B9 VOL: 0
+;PCODE: $000006BA VOL: 0
+;PCODE: $000006BB VOL: 0
+;PCODE: $000006BC VOL: 0
+;PCODE: $000006BD VOL: 0
+;PCODE: $000006BE VOL: 0
+;PCODE: $000006BF VOL: 0
+;PCODE: $000006C0 VOL: 0
+;PCODE: $000006C1 VOL: 0
+;PCODE: $000006C2 VOL: 0
+;PCODE: $000006C3 VOL: 0
+;PCODE: $000006C4 VOL: 0
+;PCODE: $000006C5 VOL: 0
+;PCODE: $000006C6 VOL: 0
+;PCODE: $000006C7 VOL: 0
+;PCODE: $000006C8 VOL: 0
+;PCODE: $000006C9 VOL: 0
+;PCODE: $000006CA VOL: 0
+;PCODE: $000006CB VOL: 0
+;PCODE: $000006CC VOL: 0
+;PCODE: $000006CD VOL: 0
+;PCODE: $000006CE VOL: 0
+;PCODE: $000006CF VOL: 0
+;PCODE: $000006D0 VOL: 0
+;PCODE: $000006D1 VOL: 0
+;PCODE: $000006D2 VOL: 0
+;PCODE: $000006D3 VOL: 0
+;PCODE: $000006D4 VOL: 0
+;PCODE: $000006D5 VOL: 0
+;PCODE: $000006D6 VOL: 0
+; 0000 02BA     lcd_gotoxy(7,1);
+;PCODE: $000006D7 VOL: 0
+;PCODE: $000006D8 VOL: 0
+;PCODE: $000006D9 VOL: 0
+;PCODE: $000006DA VOL: 0
+;PCODE: $000006DB VOL: 0
+; 0000 02BB     lcd_puts(lcd_buffer);
+;PCODE: $000006DC VOL: 0
+;PCODE: $000006DD VOL: 0
+;PCODE: $000006DE VOL: 0
+; 0000 02BC     //print date
+; 0000 02BD     /*sprintf(lcd_buffer, "%u%u %s 20%u%u", date/10,date%10, monthes[month-1], year/10,year%10);
+; 0000 02BE     lcd_goto_xy(2,6);
+; 0000 02BF     lcd_str(lcd_buffer);   */
+; 0000 02C0     if (get_key_status(MENU_ENTER_BTN)) //enter
+;PCODE: $000006DF VOL: 0
+;PCODE: $000006E0 VOL: 0
+;PCODE: $000006E1 VOL: 0
+;PCODE: $000006E2 VOL: 0
+;PCODE: $000006E3 VOL: 0
+; 0000 02C1     {
+; 0000 02C2       if (!get_prev_key_status(MENU_ENTER_BTN))
+;PCODE: $000006E4 VOL: 0
+;PCODE: $000006E5 VOL: 0
+;PCODE: $000006E6 VOL: 0
+;PCODE: $000006E7 VOL: 0
+;PCODE: $000006E8 VOL: 0
+; 0000 02C3       {
+; 0000 02C4 		lcd_clear();
+;PCODE: $000006E9 VOL: 0
+; 0000 02C5         main_menu();
+;PCODE: $000006EA VOL: 0
+; 0000 02C6     	lcd_clear();
+;PCODE: $000006EB VOL: 0
+; 0000 02C7       }
+; 0000 02C8     }
+;PCODE: $000006EC VOL: 0
+; 0000 02C9     //delay_ms(200);
+; 0000 02CA     //----------wait approx. 0.8s to avoid heating up SHTxx------------------------------
+; 0000 02CB     //for (i=0;i<40000;i++);     //(be sure that the compiler doesn't eliminate this line!)
+; 0000 02CC     //-----------------------------------------------------------------------------------
+; 0000 02CD   }
+;PCODE: $000006ED VOL: 0
+;PCODE: $000006EE VOL: 0
+;PCODE: $000006EF VOL: 0
+; 0000 02CE }
+;PCODE: $000006F0 VOL: 0
+;PCODE: $000006F1 VOL: 0
+;PCODE: $000006F2 VOL: 0
+;PCODE: $000006F3 VOL: 0
+
+	.DSEG
+_0xC4:
+	.BYTE 0x1C
+;
+;#pragma rl-
+;
+;/*void main(void)
+;{
+;// Declare your local variables here
+;
+;// Input/Output Ports initialization
+;// Port A initialization
+;// Func7=In Func6=In Func5=In Func4=In Func3=In Func2=In Func1=In Func0=In
+;// State7=T State6=T State5=T State4=T State3=T State2=T State1=T State0=T
+;PORTA=0x00;
+;DDRA=0x00;
+;
+;// Port B initialization
+;// Func7=In Func6=In Func5=In Func4=In Func3=In Func2=In Func1=In Func0=In
+;// State7=T State6=T State5=T State4=T State3=T State2=T State1=T State0=T
+;PORTB=0x00;
+;DDRB=0x00;
+;
+;// Port C initialization
+;// Func7=In Func6=In Func5=In Func4=In Func3=In Func2=In Func1=In Func0=In
+;// State7=T State6=T State5=T State4=T State3=T State2=T State1=T State0=T
+;PORTC=0x00;
+;DDRC=0x00;
+;
+;// Port D initialization
+;// Func7=In Func6=In Func5=In Func4=In Func3=In Func2=In Func1=In Func0=In
+;// State7=T State6=T State5=T State4=T State3=T State2=T State1=T State0=T
+;PORTD=0x00;
+;DDRD=0x00;
+;
+;// Timer/Counter 0 initialization
+;// Clock source: System Clock
+;// Clock value: Timer 0 Stopped
+;// Mode: Normal top=FFh
+;// OC0 output: Disconnected
+;TCCR0=0x00;
+;TCNT0=0x00;
+;OCR0=0x00;
+;
+;// Timer/Counter 1 initialization
+;// Clock source: System Clock
+;// Clock value: Timer1 Stopped
+;// Mode: Normal top=FFFFh
+;// OC1A output: Discon.
+;// OC1B output: Discon.
+;// Noise Canceler: Off
+;// Input Capture on Falling Edge
+;// Timer1 Overflow Interrupt: Off
+;// Input Capture Interrupt: Off
+;// Compare A Match Interrupt: Off
+;// Compare B Match Interrupt: Off
+;TCCR1A=0x00;
+;TCCR1B=0x00;
+;TCNT1H=0x00;
+;TCNT1L=0x00;
+;ICR1H=0x00;
+;ICR1L=0x00;
+;OCR1AH=0x00;
+;OCR1AL=0x00;
+;OCR1BH=0x00;
+;OCR1BL=0x00;
+;
+;// Timer/Counter 2 initialization
+;// Clock source: System Clock
+;// Clock value: Timer2 Stopped
+;// Mode: Normal top=FFh
+;// OC2 output: Disconnected
+;ASSR=0x00;
+;TCCR2=0x00;
+;TCNT2=0x00;
+;OCR2=0x00;
+;
+;// External Interrupt(s) initialization
+;// INT0: Off
+;// INT1: Off
+;// INT2: Off
+;MCUCR=0x00;
+;MCUCSR=0x00;
+;
+;// Timer(s)/Counter(s) Interrupt(s) initialization
+;TIMSK=0x00;
+;
+;// Analog Comparator initialization
+;// Analog Comparator: Off
+;// Analog Comparator Input Capture by Timer/Counter 1: Off
+;ACSR=0x80;
+;SFIOR=0x00;
+;
+;while (1)
+;      {
+;      // Place your code here
+;
+;      };
+;} */

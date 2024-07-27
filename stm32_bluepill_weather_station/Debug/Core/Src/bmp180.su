@@ -1,0 +1,10 @@
+../Core/Src/bmp180.c:34:6:bmp180_init	16	static
+../Core/Src/bmp180.c:43:6:bmp180_set_oversampling	16	static
+../Core/Src/bmp180.c:51:6:bmp180_update_calibration_data	16	static
+../Core/Src/bmp180.c:70:6:bmp180_write_reg	32	static
+../Core/Src/bmp180.c:80:9:bmp180_read_reg	32	static
+../Core/Src/bmp180.c:91:9:bmp180_get_raw_temperature	32	static
+../Core/Src/bmp180.c:105:7:bmp180_get_temperature	16	static
+../Core/Src/bmp180.c:114:9:bmp180_get_pressure	56	static
+../Core/Src/bmp180.c:146:9:bmp180_get_UT	16	static
+../Core/Src/bmp180.c:150:9:bmp180_get_UP	16	static

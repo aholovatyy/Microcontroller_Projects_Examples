@@ -1,0 +1,903 @@
+/*
+** lcd.c
+**
+** LCD 3310 driver
+** 
+** Written by Tony Myatt - 2007
+** Modified by Andriy Holovatyy - 2010 
+** 
+*/
+#include <stdio.h>
+#include <avr/io.h>
+#include <avr/pgmspace.h>
+#include <avr/interrupt.h>
+#include <util/delay.h>
+#include "nokia_lcd.h"
+#include <string.h>
+
+/* delay macro function */
+#define lcd_delay() for(int i=-32000;i<32000;i++)
+
+/* Command type sent to the lcd */
+typedef enum { LCD_CMD  = 0, LCD_DATA = 1 } LcdCmdData;
+
+/* Cache buffer in SRAM 84*48 bits or 504 bytes */
+static unsigned char LcdCache[LCD_CACHE_SIZE];
+
+/* Lower part of water mark */
+static int LoWaterMark;
+
+/* Higher part of water mark */
+static int HiWaterMark;
+
+/* Variable to decide whether update Lcd Cache is active/nonactive */
+static char UpdateLcd;
+
+
+/* Function prototypes */
+void lcd_base_addr(unsigned int addr);
+void lcd_send(unsigned char data, LcdCmdData cd);
+
+/* The lcd cursor position */
+int lcdCacheIdx;
+
+/* Alphabet lookup */ //164 symbols in table
+unsigned char PROGMEM font5x7 [][5] = {
+	{ 0x00, 0x00, 0x00, 0x00, 0x00 },   //1 sp
+    { 0x00, 0x00, 0x2f, 0x00, 0x00 },   //2 !
+    { 0x00, 0x07, 0x00, 0x07, 0x00 },   //3 "
+    { 0x14, 0x7f, 0x14, 0x7f, 0x14 },   //4 #
+    { 0x24, 0x2a, 0x7f, 0x2a, 0x12 },   //5 $
+	{ 0x32, 0x34, 0x08, 0x16, 0x26 },   //6 %
+    { 0x36, 0x49, 0x55, 0x22, 0x50 },   //7 &
+    { 0x00, 0x05, 0x03, 0x00, 0x00 },   //8 '
+    { 0x00, 0x1c, 0x22, 0x41, 0x00 },   //9 (
+    { 0x00, 0x41, 0x22, 0x1c, 0x00 },   //10 )
+    { 0x14, 0x08, 0x3E, 0x08, 0x14 },   //11 *
+    { 0x08, 0x08, 0x3E, 0x08, 0x08 },   //12 +
+    { 0x00, 0x00, 0x50, 0x30, 0x00 },   //13 ,
+    { 0x10, 0x10, 0x10, 0x10, 0x10 },   //14 -
+    { 0x00, 0x60, 0x60, 0x00, 0x00 },   //15 .
+    { 0x20, 0x10, 0x08, 0x04, 0x02 },   //16 /
+    { 0x3E, 0x51, 0x49, 0x45, 0x3E },   //17 0
+    { 0x00, 0x42, 0x7F, 0x40, 0x00 },   //18 1
+    { 0x42, 0x61, 0x51, 0x49, 0x46 },   //19 2
+    { 0x21, 0x41, 0x45, 0x4B, 0x31 },   //20 3
+    { 0x18, 0x14, 0x12, 0x7F, 0x10 },   //21 4
+    { 0x27, 0x45, 0x45, 0x45, 0x39 },   //22 5
+    { 0x3C, 0x4A, 0x49, 0x49, 0x30 },   //23 6
+    { 0x01, 0x71, 0x09, 0x05, 0x03 },   //24 7
+    { 0x36, 0x49, 0x49, 0x49, 0x36 },   //25 8
+    { 0x06, 0x49, 0x49, 0x29, 0x1E },   //26 9
+    { 0x00, 0x36, 0x36, 0x00, 0x00 },   //27 :
+    { 0x00, 0x56, 0x36, 0x00, 0x00 },   //28 ;
+    { 0x08, 0x14, 0x22, 0x41, 0x00 },   //29 <
+    { 0x14, 0x14, 0x14, 0x14, 0x14 },   //30 =
+    { 0x00, 0x41, 0x22, 0x14, 0x08 },   //31 >
+    { 0x02, 0x01, 0x51, 0x09, 0x06 },   //32 ?
+    { 0x32, 0x49, 0x59, 0x51, 0x3E },   //33 @
+    { 0x7E, 0x11, 0x11, 0x11, 0x7E },   //34 A
+    { 0x7F, 0x49, 0x49, 0x49, 0x36 },   //35 B
+    { 0x3E, 0x41, 0x41, 0x41, 0x22 },   //36 C
+    { 0x7F, 0x41, 0x41, 0x22, 0x1C },   //37 D
+    { 0x7F, 0x49, 0x49, 0x49, 0x41 },   //38 E
+    { 0x7F, 0x09, 0x09, 0x09, 0x01 },   //39 F
+    { 0x3E, 0x41, 0x49, 0x49, 0x7A },   //40 G
+    { 0x7F, 0x08, 0x08, 0x08, 0x7F },   //41 H
+    { 0x00, 0x41, 0x7F, 0x41, 0x00 },   //42 I
+    { 0x20, 0x40, 0x41, 0x3F, 0x01 },   //43 J
+    { 0x7F, 0x08, 0x14, 0x22, 0x41 },   //44 K
+    { 0x7F, 0x40, 0x40, 0x40, 0x40 },   //45 L
+    { 0x7F, 0x02, 0x0C, 0x02, 0x7F },   //46 M
+    { 0x7F, 0x04, 0x08, 0x10, 0x7F },   //47 N
+    { 0x3E, 0x41, 0x41, 0x41, 0x3E },   //48 O
+    { 0x7F, 0x09, 0x09, 0x09, 0x06 },   //49 P
+    { 0x3E, 0x41, 0x51, 0x21, 0x5E },   //50 Q
+    { 0x7F, 0x09, 0x19, 0x29, 0x46 },   //51 R
+    { 0x46, 0x49, 0x49, 0x49, 0x31 },   //52 S
+    { 0x01, 0x01, 0x7F, 0x01, 0x01 },   //53 T
+    { 0x3F, 0x40, 0x40, 0x40, 0x3F },   //54 U
+    { 0x1F, 0x20, 0x40, 0x20, 0x1F },   //55 V
+    { 0x3F, 0x40, 0x38, 0x40, 0x3F },   //56 W
+    { 0x63, 0x14, 0x08, 0x14, 0x63 },   //57 X
+    { 0x07, 0x08, 0x70, 0x08, 0x07 },   //58 Y
+    { 0x61, 0x51, 0x49, 0x45, 0x43 },   //59 Z
+    { 0x00, 0x7F, 0x41, 0x41, 0x00 },   //60 [
+    { 0x55, 0x2A, 0x55, 0x2A, 0x55 },   //61 55
+    { 0x00, 0x41, 0x41, 0x7F, 0x00 },   //62 ]
+    { 0x04, 0x02, 0x01, 0x02, 0x04 },   //63 ^
+    { 0x40, 0x40, 0x40, 0x40, 0x40 },   //64 _
+    { 0x00, 0x01, 0x02, 0x04, 0x00 },   //65 '
+    { 0x20, 0x54, 0x54, 0x54, 0x78 },   //66 a
+    { 0x7F, 0x48, 0x44, 0x44, 0x38 },   //67 b
+    { 0x38, 0x44, 0x44, 0x44, 0x20 },   //68 c
+    { 0x38, 0x44, 0x44, 0x48, 0x7F },   //69 d
+    { 0x38, 0x54, 0x54, 0x54, 0x18 },   //70 e
+    { 0x08, 0x7E, 0x09, 0x01, 0x02 },   //71 f
+    { 0x0C, 0x52, 0x52, 0x52, 0x3E },   //72 g
+    { 0x7F, 0x08, 0x04, 0x04, 0x78 },   //73 h
+    { 0x00, 0x44, 0x7D, 0x40, 0x00 },   //74 i
+    { 0x20, 0x40, 0x44, 0x3D, 0x00 },   //75 j
+    { 0x7F, 0x10, 0x28, 0x44, 0x00 },   //76 k
+    { 0x00, 0x41, 0x7F, 0x40, 0x00 },   //77 l
+    { 0x7C, 0x04, 0x18, 0x04, 0x78 },   //78 m
+    { 0x7C, 0x08, 0x04, 0x04, 0x78 },   //79 n
+    { 0x38, 0x44, 0x44, 0x44, 0x38 },   //80 o
+    { 0x7C, 0x14, 0x14, 0x14, 0x08 },   //81 p
+    { 0x08, 0x14, 0x14, 0x18, 0x7C },   //82 q
+    { 0x7C, 0x08, 0x04, 0x04, 0x08 },   //83 r
+    { 0x48, 0x54, 0x54, 0x54, 0x20 },   //84 s
+    { 0x04, 0x3F, 0x44, 0x40, 0x20 },   //85 t
+    { 0x3C, 0x40, 0x40, 0x20, 0x7C },   //86 u
+    { 0x1C, 0x20, 0x40, 0x20, 0x1C },   //87 v
+    { 0x3C, 0x40, 0x30, 0x40, 0x3C },   //88 w
+    { 0x44, 0x28, 0x10, 0x28, 0x44 },   //89 x
+    { 0x0C, 0x50, 0x50, 0x50, 0x3C },   //90 y
+    { 0x44, 0x64, 0x54, 0x4C, 0x44 },   //91 z
+    { 0x00, 0x7F, 0x3E, 0x1C, 0x08 },   //92 > Filled
+	{ 0x08, 0x1C, 0x3E, 0x7F, 0x00 }, 	 //93 < Filled
+	{ 0x08, 0x7C, 0x7E, 0x7C, 0x08 },   //94 Arrow up
+	{ 0x10, 0x3E, 0x7E, 0x3E, 0x10 },   //95 Arrow down	
+	{ 0x3E, 0x3E, 0x3E, 0x3E, 0x3E },   //96 Stop
+	{ 0x00, 0x7F, 0x3E, 0x1C, 0x08 },   //97 Play
+	{ 0x00, 0x06, 0x09, 0x09, 0x06 },   //98 degree symbol
+	{ 0x7E, 0x11, 0x11, 0x11, 0x7E },   //99  A 
+	{ 0x7F, 0x49, 0x49, 0x49, 0x30 },	 //100 Б
+	{ 0x7F, 0x49, 0x49, 0x49, 0x36 },   //101 B
+	{ 0x7F, 0x01, 0x01, 0x01, 0x01 },   //102 Г
+	{ 0x60, 0x3E, 0x21, 0x3F, 0x60 },   //103 Д
+	{ 0x7F, 0x49, 0x49, 0x49, 0x41 }, 	 //104 Е
+	{ 0x67, 0x18, 0x7F, 0x18, 0x67 },   //105 Ж
+	{ 0x22, 0x41, 0x49, 0x49, 0x36 }, 	 //106 3
+	{ 0x7F, 0x10, 0x08, 0x04, 0x7F },   //107 И
+	{ 0x7F, 0x10, 0x09, 0x04, 0x7F }, 	 //108 Й
+	{ 0x7F, 0x08, 0x14, 0x22, 0x41 },   //109 K
+	{ 0x40, 0x3E, 0x01, 0x01, 0x7E },	 //110 Л
+	{ 0x7F, 0x02, 0x04, 0x02, 0x7F },   //111 M
+	{ 0x7F, 0x08, 0x08, 0x08, 0x7F },	 //112 H
+    { 0x3E, 0x41, 0x41, 0x41, 0x3E },   //113 O
+	{ 0x7F, 0x01, 0x01, 0x01, 0x7F },	 //114 П
+	{ 0x7F, 0x09, 0x09, 0x09, 0x06 },   //115 P
+	{ 0x3E, 0x41, 0x41, 0x41, 0x22 }, 	 //116 C
+	{ 0x01, 0x01, 0x7F, 0x01, 0x01 },   //117 T
+	{ 0x27, 0x48, 0x48, 0x48, 0x3F }, 	 //118 У
+	{ 0x1E, 0x21, 0x7F, 0x21, 0x1E },   //119 Ф
+	{ 0x63, 0x14, 0x08, 0x14, 0x63 }, 	 //120 X
+	{ 0x3F, 0x20, 0x20, 0x3F, 0x40 },   //121 Ц
+	{ 0x1F, 0x10, 0x10, 0x10, 0x7F }, 	 //122 Ч
+	{ 0x7F, 0x40, 0x7F, 0x40, 0x7F },   //123 Ш
+	{ 0x3F, 0x20, 0x3F, 0x20, 0x7F }, 	 //124 Щ
+	{ 0x01, 0x7F, 0x44, 0x44, 0x38 },   //125 Ъ
+	{ 0x7F, 0x44, 0x7C, 0x00, 0x7F },	 //126 Ы
+	{ 0x7F, 0x44, 0x44, 0x44, 0x38 },   //127 Ь
+	{ 0x22, 0x41, 0x49, 0x49, 0x3E },	 //128 Э
+	{ 0x7F, 0x08, 0x7F, 0x41, 0x7F },   //129 Ю
+	{ 0x46, 0x29, 0x19, 0x09, 0x7F },	 //130 Я
+	{ 0x20, 0x54, 0x54, 0x54, 0x78 },   //131 a
+	{ 0x3C, 0x4A, 0x4A, 0x4B, 0x30 },	 //132 б
+	{ 0x7C, 0x54, 0x54, 0x58, 0x20 },   //133 в
+	{ 0x7C, 0x04, 0x04, 0x04, 0x04 },	 //134 г
+	{ 0x60, 0x38, 0x24, 0x3C, 0x60 },   //135 д
+	{ 0x38, 0x54, 0x54, 0x54, 0x18 },	 //136 e
+	{ 0x74, 0x08, 0x7C, 0x08, 0x74 },   //137 ж
+	{ 0x28, 0x44, 0x54, 0x54, 0x28 }, 	 //138 з
+	{ 0x7C, 0x20, 0x10, 0x08, 0x7C },   //139 и
+	{ 0x7C, 0x21, 0x12, 0x09, 0x7C }, 	 //140 й
+	{ 0x7C, 0x10, 0x10, 0x28, 0x44 },   //141 к
+	{ 0x40, 0x78, 0x04, 0x04, 0x7C }, 	 //142 л
+	{ 0x7C, 0x08, 0x10, 0x08, 0x7C },   //143 м 
+	{ 0x7C, 0x10, 0x10, 0x10, 0x7C }, 	 //144 н
+	{ 0x38, 0x44, 0x44, 0x44, 0x38 },   //145 o
+	{ 0x7C, 0x04, 0x04, 0x04, 0x7C },	 //146 п
+	{ 0x7C, 0x14, 0x14, 0x14, 0x08 },   //147 p 
+	{ 0x38, 0x44, 0x44, 0x44, 0x28 }, 	 //148 c
+	{ 0x04, 0x04, 0x7C, 0x04, 0x04 },   //149 т
+	{ 0x0C, 0x50, 0x50, 0x50, 0x3C },   //150 y
+	{ 0x18, 0x24, 0x7C, 0x24, 0x18 },   //151 ф
+	{ 0x44, 0x28, 0x10, 0x28, 0x44 }, 	 //152 х
+	{ 0x3C, 0x20, 0x20, 0x3C, 0x40 },   //153 ц
+	{ 0x1C, 0x20, 0x20, 0x20, 0x7C }, 	 //154 ч
+	{ 0x7C, 0x40, 0x7C, 0x40, 0x7C },   //155 ш		
+	{ 0x3C, 0x20, 0x3C, 0x20, 0x7C }, 	 //156 щ
+	{ 0x04, 0x7C, 0x48, 0x48, 0x30 },   //157 ъ
+	{ 0x7C, 0x48, 0x48, 0x30, 0x7C }, 	 //158 ы
+	{ 0x7C, 0x48, 0x48, 0x48, 0x30 },   //159 ь
+	{ 0x28, 0x44, 0x54, 0x54, 0x38 }, 	 //160 э
+	{ 0x7C, 0x38, 0x44, 0x44, 0x38 },   //161 ю
+	{ 0x48, 0x34, 0x14, 0x14, 0x7C }, 	 //162 я
+	{ 0x7E, 0x4B, 0x4A, 0x4B, 0x42 },   //163 Ё
+	{ 0x38, 0x55, 0x54, 0x55, 0x18 } 	 //164 ё 	 
+};
+
+/*const unsigned char TABLE5[240]={0x00,0x00,0x00,0x00,0x00,	// 20 space	 		ASCII table for NOKIA LCD: 96 rows * 5 bytes= 480 bytes
+						0x00,0x00,0x5f,0x00,0x00,	// 21 !
+						0x00,0x07,0x00,0x07,0x00,	// 22 "
+						0x14,0x7f,0x14,0x7f,0x14,	// 23 #
+						0x24,0x2a,0x7f,0x2a,0x12,	// 24 $
+						0x23,0x13,0x08,0x64,0x62,	// 25 %
+						0x36,0x49,0x55,0x22,0x50,	// 26 &
+						0x00,0x05,0x03,0x00,0x00,	// 27 '
+						0x00,0x1c,0x22,0x41,0x00,	// 28 (
+						0x00,0x41,0x22,0x1c,0x00,	// 29 )
+						0x14,0x08,0x3e,0x08,0x14,	// 2a *
+						0x08,0x08,0x3e,0x08,0x08,	// 2b +
+						0x00,0x50,0x30,0x00,0x00,	// 2c ,
+						0x08,0x08,0x08,0x08,0x08,	// 2d -
+						0x00,0x60,0x60,0x00,0x00,	// 2e .
+						0x20,0x10,0x08,0x04,0x02,	// 2f /
+						0x3e,0x51,0x49,0x45,0x3e,	// 30 0
+						0x00,0x42,0x7f,0x40,0x00,	// 31 1
+						0x42,0x61,0x51,0x49,0x46,	// 32 2
+						0x21,0x41,0x45,0x4b,0x31,	// 33 3
+						0x18,0x14,0x12,0x7f,0x10,	// 34 4
+						0x27,0x45,0x45,0x45,0x39,	// 35 5
+						0x3c,0x4a,0x49,0x49,0x30,	// 36 6
+						0x01,0x71,0x09,0x05,0x03,	// 37 7
+						0x36,0x49,0x49,0x49,0x36,	// 38 8
+						0x06,0x49,0x49,0x29,0x1e,	// 39 9
+						0x00,0x36,0x36,0x00,0x00,	// 3a :
+						0x00,0x56,0x36,0x00,0x00,	// 3b ;
+						0x08,0x14,0x22,0x41,0x00,	// 3c <
+						0x14,0x14,0x14,0x14,0x14,	// 3d =
+						0x00,0x41,0x22,0x14,0x08,	// 3e >
+						0x02,0x01,0x51,0x09,0x06,	// 3f ?
+						0x32,0x49,0x79,0x41,0x3e,	// 40 @
+						0x7e,0x11,0x11,0x11,0x7e,	// 41 A
+						0x7f,0x49,0x49,0x49,0x36,	// 42 B
+						0x3e,0x41,0x41,0x41,0x22,	// 43 C
+						0x7f,0x41,0x41,0x22,0x1c,	// 44 D
+						0x7f,0x49,0x49,0x49,0x41,	// 45 E
+						0x7f,0x09,0x09,0x09,0x01,	// 46 F
+						0x3e,0x41,0x49,0x49,0x7a,	// 47 G
+						0x7f,0x08,0x08,0x08,0x7f,	// 48 H
+						0x00,0x41,0x7f,0x41,0x00,	// 49 I
+						0x20,0x40,0x41,0x3f,0x01,	// 4a J
+						0x7f,0x08,0x14,0x22,0x41,	// 4b K
+						0x7f,0x40,0x40,0x40,0x40,	// 4c L
+						0x7f,0x02,0x0c,0x02,0x7f,	// 4d M
+						0x7f,0x04,0x08,0x10,0x7f,	// 4e N
+						0x3e,0x41,0x41,0x41,0x3e};	// 4f O
+						
+const unsigned char TABLE6[240]={0x7f,0x09,0x09,0x09,0x06,	// 50 P
+						0x3e,0x41,0x51,0x21,0x5e,	// 51 Q
+						0x7f,0x09,0x19,0x29,0x46,	// 52 R
+						0x46,0x49,0x49,0x49,0x31,	// 53 S
+						0x01,0x01,0x7f,0x01,0x01,	// 54 T
+						0x3f,0x40,0x40,0x40,0x3f,	// 55 U
+						0x1f,0x20,0x40,0x20,0x1f,	// 56 V
+						0x3f,0x40,0x38,0x40,0x3f,	// 57 W
+						0x63,0x14,0x08,0x14,0x63,	// 58 X
+						0x07,0x08,0x70,0x08,0x07,	// 59 Y
+						0x61,0x51,0x49,0x45,0x43,	// 5a Z
+						0x00,0x7f,0x41,0x41,0x00,	// 5b [
+						0x02,0x04,0x08,0x10,0x20,	// 5c
+						0x00,0x41,0x41,0x7f,0x00,	// 5d
+						0x04,0x02,0x01,0x02,0x04,	// 5e
+						0x40,0x40,0x40,0x40,0x40,	// 5f
+						0x00,0x01,0x02,0x04,0x00,	// 60
+						0x20,0x54,0x54,0x54,0x78,	// 61 a
+						0x7f,0x48,0x44,0x44,0x38,	// 62 b
+						0x38,0x44,0x44,0x44,0x20,	// 63 c
+						0x38,0x44,0x44,0x48,0x7f,	// 64 d
+						0x38,0x54,0x54,0x54,0x18,	// 65 e
+						0x08,0x7e,0x09,0x01,0x02,	// 66 f
+						0x0c,0x52,0x52,0x52,0x3e,	// 67 g
+						0x7f,0x08,0x04,0x04,0x78,	// 68 h
+						0x00,0x44,0x7d,0x40,0x00,	// 69 i
+						0x20,0x40,0x44,0x3d,0x00,	// 6a j 
+						0x7f,0x10,0x28,0x44,0x00,	// 6b k
+						0x00,0x41,0x7f,0x40,0x00,	// 6c l
+						0x7c,0x04,0x18,0x04,0x78,	// 6d m
+						0x7c,0x08,0x04,0x04,0x78,	// 6e n
+						0x38,0x44,0x44,0x44,0x38,	// 6f o
+						0x7c,0x14,0x14,0x14,0x08,	// 70 p
+						0x08,0x14,0x14,0x18,0x7c,	// 71 q
+						0x7c,0x08,0x04,0x04,0x08,	// 72 r
+						0x48,0x54,0x54,0x54,0x20,	// 73 s
+						0x04,0x3f,0x44,0x40,0x20,	// 74 t
+						0x3c,0x40,0x40,0x20,0x7c,	// 75 u
+						0x1c,0x20,0x40,0x20,0x1c,	// 76 v
+						0x3c,0x40,0x30,0x40,0x3c,	// 77 w
+						0x44,0x28,0x10,0x28,0x44,	// 78 x
+						0x0c,0x50,0x50,0x50,0x3c,	// 79 y
+						0x44,0x64,0x54,0x4c,0x44,	// 7a z
+						0x00,0x08,0x36,0x41,0x00,	// 7b
+						0x00,0x00,0x7f,0x00,0x00,	// 7c
+						0x00,0x41,0x36,0x08,0x00,	// 7d
+						0x10,0x08,0x08,0x10,0x08,	// 7e
+						0x78,0x46,0x41,0x46,0x78};	// 7f
+
+*/
+
+/* Performs IO & LCD controller initialization */
+void lcd_init(void)
+{
+    // Pull-up on reset pin
+    LCD_PORT |= LCD_RST_PIN;
+	
+	// Set output bits on lcd port
+	LCD_DDR |= LCD_RST_PIN | LCD_CE_PIN | LCD_DC_PIN | LCD_DATA_PIN | LCD_CLK_PIN;
+    
+	// Wait after VCC high for reset (max 30ms)
+    _delay_ms(15);
+    
+    // Toggle display reset pin
+    LCD_PORT &= ~LCD_RST_PIN;
+    lcd_delay();
+    LCD_PORT |= LCD_RST_PIN;
+
+    // Disable LCD controller
+    LCD_PORT |= LCD_CE_PIN;
+
+    lcd_send(0x21, LCD_CMD);  // LCD Extended Commands
+    lcd_send(0xC8, LCD_CMD);  // Set LCD Vop(Contrast)
+    lcd_send(0x06, LCD_CMD);  // Set Temp coefficent
+    lcd_send(0x13, LCD_CMD);  // LCD bias mode 1:48
+    lcd_send(0x20, LCD_CMD);  // Standard Commands, Horizontal addressing
+    lcd_send(0x0D, LCD_CMD);  // LCD in normal mode 0x0C, inverse-mode 0x0D
+    
+    // Clear lcd
+    lcd_clear();
+	
+	// For using printf
+	//fdevopen(lcd_chr, 0);
+}
+
+/* Set display contrast. Note: No change is visible at ambient temperature */
+void lcd_contrast(unsigned char contrast)
+{
+	lcd_send(0x21, LCD_CMD);				// LCD Extended Commands
+    lcd_send(0x80 | contrast, LCD_CMD);		// Set LCD Vop(Contrast)
+    lcd_send(0x20, LCD_CMD);				// LCD std cmds, hori addr mode
+}
+
+/* Clears the display */
+void lcd_clear(void)
+{
+	lcdCacheIdx = 0;
+	
+	lcd_base_addr(lcdCacheIdx);
+	
+    // Set the entire cache to zero and write 0s to lcd
+    for(int i=0;i<LCD_CACHE_SIZE;i++) {
+		lcd_send(0, LCD_DATA);
+    }
+}
+
+/*
+ * Name         :  LcdClear
+ * Description  :  Clears the display. LcdUpdate must be called next.
+ * Argument(s)  :  None.
+ * Return value :  None.
+ * Note         :  Based on Sylvain Bissonette's code
+ */
+void LcdClear ( void )
+{
+// Removed in version 0.2.6, March 14 2009
+// Optimized by Jakub Lasinski
+//    int i;
+//
+//    /* Set 0x00 to all LcdCache's contents */
+//    for ( i = 0; i < LCD_CACHE_SIZE; i++ )
+//    {
+//        LcdCache[ i ] = 0x00;
+//    }
+	memset(LcdCache,0x00,LCD_CACHE_SIZE); //Sugestion - its faster and its 10 bytes less in program mem
+    /* Reset watermark pointers to full */
+    LoWaterMark = 0;
+    HiWaterMark = LCD_CACHE_SIZE - 1;
+
+    /* Set update flag to be true */
+    UpdateLcd = TRUE;
+}
+
+
+/* Clears an area on a line */
+void lcd_clear_area(unsigned char line, unsigned char startX, unsigned char endX)
+{  
+    // Start and end positions of line
+    int start = (line-1)*84+(startX-1);
+    int end = (line-1)*84+(endX-1);
+	
+	lcd_base_addr(start);
+    
+    // Clear all data in range from cache
+    for(unsigned int i=start;i<end;i++) {
+        lcd_send(0, LCD_DATA);
+    }
+}
+
+/* Clears an entire text block. (rows of 8 pixels on the lcd) */
+void lcd_clear_line(unsigned char line)
+{
+    lcd_clear_area(line, 1, LCD_X_RES);
+}
+
+/* Sets cursor location to xy location corresponding to basic font size */
+void lcd_goto_xy(unsigned char x, unsigned char y)
+{
+    lcdCacheIdx = (x-1)*6 + (y-1)*84;
+}
+
+/* Sets cursor location to exact xy pixel location on the lcd */
+void lcd_goto_xy_exact(unsigned char x, unsigned char y)
+{
+    lcdCacheIdx = (x-1) + (y-1)*84;
+}
+
+/* Displays a character at current cursor location */
+void lcd_chr(char chr)
+{
+	lcd_base_addr(lcdCacheIdx);
+
+    if (chr>192)
+ 	 chr-=62; 
+	
+	// 5 pixel wide characters and add space
+    for(unsigned char i=0;i<5;i++) {
+		lcd_send(pgm_read_byte(&font5x7[chr-32][i]) << 1, LCD_DATA);
+    }
+	lcd_send(0, LCD_DATA);
+	
+	lcdCacheIdx += 6;	
+}
+
+
+/* Displays a character at current cursor location */
+void lcd_chr_inv(char chr)
+{
+	lcd_base_addr(lcdCacheIdx);
+
+    if (chr>192)
+ 	 chr-=62; 
+	
+	// 5 pixel wide characters and add space
+    for(unsigned char i=0;i<5;i++) {
+		lcd_write_data_inv(pgm_read_byte(&font5x7[chr-32][i]) << 1);
+    }
+	lcd_send(0, LCD_DATA);
+	
+	lcdCacheIdx += 6;	
+}
+
+void lcd_write_data_inv(char bytefornokia_data_inv)
+{
+	 unsigned char caa;
+	 
+	lcd_send(0x0D, LCD_CMD);
+	 
+	// Data/DC are outputs for the lcd (all low)
+	LCD_DDR |= LCD_DATA_PIN | LCD_DC_PIN;
+ 
+	// Enable display controller (active low)
+	LCD_PORT &= ~LCD_CE_PIN;
+
+	//nok_dc=1;
+	//nok_cs=0;	// chip enabled
+	
+	LCD_PORT |= LCD_DC_PIN;
+
+	for (caa=8;caa>0;caa--) 
+	{
+		//_delay_us(2);
+		if ((bytefornokia_data_inv&0x01)==0) LCD_PORT &= ~LCD_DATA_PIN;
+		else LCD_PORT |= LCD_DATA_PIN;
+		//nok_sclk=1;
+		// Toggle the clock
+		LCD_PORT |= LCD_CLK_PIN;
+		LCD_PORT &= ~LCD_CLK_PIN;
+		
+		bytefornokia_data_inv=bytefornokia_data_inv>>1;
+	}
+
+	//nok_cs=1;	// chip disabled
+	
+	// Disable display controller
+    LCD_PORT |= LCD_CE_PIN;
+	
+	// Data/DC can be used as button inputs when not sending to LCD (/w pullups)
+	LCD_DDR &= ~(LCD_DATA_PIN | LCD_DC_PIN);
+	LCD_PORT |= LCD_DATA_PIN;
+	
+	lcd_send(0x0C, LCD_CMD);
+}
+
+
+//////////////////////////////////////////////////////////////////////////////////
+/*void table_to_nokialcd(char charsel)	// extract ascii from tables & write to LCD
+{
+	char char_row,charpos,chardata;
+	
+	if (charsel<0x20) return;
+	if (charsel>0x7f) return;
+
+	for (char_row=0;char_row<5;char_row++) 
+	{		// 5 bytes	
+		if (charsel<0x50) {
+		  charpos=(((charsel&0xff)-0x20)*5);
+		  chardata=TABLE5[(charpos+char_row)];
+		} // use TABLE5
+		else if (charsel>0x4f){
+			charpos=(((charsel&0xff)-0x50)*5);
+			chardata=TABLE6[(charpos+char_row)];
+		}	// use TABLE6			
+		lcd_send(chardata, LCD_DATA);		// send data to nokia	
+	}
+	lcd_send(0x00, LCD_DATA);		// 	1 byte (always blank)
+	lcdCacheIdx += 6;
+	
+}
+
+//////////////////////////////////////////////////////////////////////////////////
+
+void nokia_printchar(char cvar)					// Write 1 character to LCD 
+{
+  //charsel=cvar;
+  lcd_base_addr(lcdCacheIdx);
+  table_to_nokialcd(cvar);
+}
+
+void nokia_printstr(char *str)
+{
+ while(*str) 
+ {
+   nokia_printchar(*str++);    
+ }
+}*/
+
+void nokia_gotoxy(char xnokia, char ynokia)		// Nokia LCD 3310 Position cursor
+{
+	lcd_send(0x40|(ynokia&0x07), LCD_CMD);	// Y axe initialisation: 0100 0yyy			
+	lcd_send(0x80|(xnokia&0x7f), LCD_CMD);	// X axe initialisation: 1xxx xxxx
+}
+
+void lcd_plot(char xnokia, char plot_value8)
+{
+  char i;
+  long plot_value32=0;
+  long plot_umsb,plot_lmsb,plot_ulsb,plot_llsb;
+ //plot_value32|=1;			// unremark this if you want dotgraph instead of bargraph	
+
+  for (i=0; i!=plot_value8; i++)
+  {
+	plot_value32|=1;			// remark this if you want dotgraph instead of bargraph		
+	plot_value32<<=1;
+  }
+
+  plot_value32|=2;				// bottom line is always filled
+
+  plot_llsb=(plot_value32&0xff);			
+  plot_ulsb=((plot_value32>>8)&0xff);
+  plot_lmsb=((plot_value32>>16)&0xff);
+  plot_umsb=((plot_value32>>24)&0xff);
+
+  nokia_gotoxy(xnokia,1);
+  lcd_write_data_inv(plot_umsb);
+
+  nokia_gotoxy(xnokia,2);
+  lcd_write_data_inv(plot_lmsb);
+
+  nokia_gotoxy(xnokia,3);
+  lcd_write_data_inv(plot_ulsb);
+
+  nokia_gotoxy(xnokia,4);
+  lcd_write_data_inv(plot_llsb);
+}
+
+/* Displays string at current cursor location and increment cursor location */
+void lcd_str(char *str)
+{
+    while(*str) {
+        lcd_chr(*str++);
+    }
+}
+
+void lcd_print_lowbatdegree(void)
+{
+ lcd_base_addr(lcdCacheIdx);  
+ lcd_send(0x00, LCD_DATA);
+ lcd_send(0x06, LCD_DATA);
+ lcd_send(0x0f, LCD_DATA);
+ lcd_send(0x0f, LCD_DATA);
+ lcd_send(0x06, LCD_DATA);
+ lcd_send(0x00, LCD_DATA); 
+ lcdCacheIdx += 6;	
+}
+
+// Set the base address of the lcd
+void lcd_base_addr(unsigned int addr) {
+	lcd_send(0x80 |(addr % LCD_X_RES), LCD_CMD);
+	lcd_send(0x40 |(addr / LCD_X_RES), LCD_CMD);
+}
+
+/* Sends data to display controller */
+void lcd_send(unsigned char data, LcdCmdData cd)
+{
+	// Data/DC are outputs for the lcd (all low)
+	LCD_DDR |= LCD_DATA_PIN | LCD_DC_PIN;
+	
+    // Enable display controller (active low)
+    LCD_PORT &= ~LCD_CE_PIN;
+
+    // Either command or data
+    if(cd == LCD_DATA) {
+        LCD_PORT |= LCD_DC_PIN;
+    } else {
+        LCD_PORT &= ~LCD_DC_PIN;
+    }
+	
+	for(unsigned char i=0;i<8;i++) {
+	
+		// Set the DATA pin value
+		if((data>>(7-i)) & 0x01) {
+			LCD_PORT |= LCD_DATA_PIN;
+		} else {
+			LCD_PORT &= ~LCD_DATA_PIN;
+		}
+		
+		// Toggle the clock
+		LCD_PORT |= LCD_CLK_PIN;
+		LCD_PORT &= ~LCD_CLK_PIN;
+	}
+
+	// Disable display controller
+    LCD_PORT |= LCD_CE_PIN;
+	
+	// Data/DC can be used as button inputs when not sending to LCD (/w pullups)
+	LCD_DDR &= ~(LCD_DATA_PIN | LCD_DC_PIN);
+	LCD_PORT |= LCD_DATA_PIN | LCD_DC_PIN;
+}
+
+
+/*
+ * Name         :  LcdImage
+ * Description  :  Image mode display routine.
+ * Argument(s)  :  Address of image in hexes
+ * Return value :  None.
+ * Example      :  LcdImage(&sample_image_declared_as_array);
+ */
+void lcd_image(unsigned char *imageData )
+{
+	/* Initialize cache index to 0 */
+//	LcdCacheIdx = 0;
+//	/* While within cache range */
+//    for ( LcdCacheIdx = 0; LcdCacheIdx < LCD_CACHE_SIZE; LcdCacheIdx++ )
+//    {
+//		/* Copy data from pointer to cache buffer */
+//        LcdCache[LcdCacheIdx] = pgm_read_byte( imageData++ );
+//    }
+	/* optimized by Jakub Lasinski, version 0.2.6, March 14, 2009 */
+    memcpy_P(LcdCache,imageData,LCD_CACHE_SIZE);	//Same as aboeve - 6 bytes less and faster instruction
+	/* Reset watermark pointers to be full */
+    LoWaterMark = 0;
+    HiWaterMark = LCD_CACHE_SIZE - 1;
+
+	/* Set update flag to be true */
+    UpdateLcd = 1;
+}
+
+/*
+ * Name         :  LcdUpdate
+ * Description  :  Copies the LCD cache into the device RAM.
+ * Argument(s)  :  None.
+ * Return value :  None.
+ */
+void lcd_update ( void )
+{
+    int i;
+
+    if ( LoWaterMark < 0 )
+        LoWaterMark = 0;
+    else if ( LoWaterMark >= LCD_CACHE_SIZE )
+        LoWaterMark = LCD_CACHE_SIZE - 1;
+
+    if ( HiWaterMark < 0 )
+        HiWaterMark = 0;
+    else if ( HiWaterMark >= LCD_CACHE_SIZE )
+        HiWaterMark = LCD_CACHE_SIZE - 1;
+
+    /*  Set base address according to LoWaterMark. */
+    lcd_send( 0x80 | ( LoWaterMark % LCD_X_RES ), LCD_CMD );
+    lcd_send( 0x40 | ( LoWaterMark / LCD_X_RES ), LCD_CMD );
+
+    /*  Serialize the display buffer. */
+    for ( i = LoWaterMark; i <= HiWaterMark; i++ )
+    {
+        lcd_send( LcdCache[ i ], LCD_DATA );
+    }
+
+    /*  Reset watermark pointers. */
+    LoWaterMark = LCD_CACHE_SIZE - 1;
+    HiWaterMark = 0;
+
+    /* Set update flag to be true */
+	UpdateLcd = 0;
+}
+
+/*
+ * Name         :  LcdPixel
+ * Description  :  Displays a pixel at given absolute (x, y) location.
+ * Argument(s)  :  x, y -> Absolute pixel coordinates
+ *                 mode -> Off, On or Xor. See enum in pcd8544.h.
+ * Return value :  see return value on pcd8544.h
+ * Note         :  Based on Sylvain Bissonette's code
+ */
+uint8_t lcd_pixel(uint8_t x, uint8_t y, LcdPixelMode mode)
+{
+    word  index;
+    byte  offset;
+    byte  data;
+
+    /* Prevent from getting out of border */
+    if ( x > LCD_X_RES ) return OUT_OF_BORDER;
+    if ( y > LCD_Y_RES ) return OUT_OF_BORDER;
+
+    /* Recalculating index and offset */
+    index = ( ( y / 8 ) * 84 ) + x;
+    offset  = y - ( ( y / 8 ) * 8 );
+
+    data = LcdCache[ index ];
+
+    /* Bit processing */
+
+	/* Clear mode */
+    if ( mode == PIXEL_OFF )
+    {
+        data &= ( ~( 0x01 << offset ) );
+    }
+
+    /* On mode */
+    else if ( mode == PIXEL_ON )
+    {
+        data |= ( 0x01 << offset );
+    }
+
+    /* Xor mode */
+    else if ( mode  == PIXEL_XOR )
+    {
+        data ^= ( 0x01 << offset );
+    }
+
+    /* Final result copied to cache */
+    LcdCache[ index ] = data;
+
+    if ( index < LoWaterMark )
+    {
+        /*  Update low marker. */
+        LoWaterMark = index;
+    }
+
+    if ( index > HiWaterMark )
+    {
+        /*  Update high marker. */
+        HiWaterMark = index;
+    }
+    return OK;
+}
+
+/*
+ * Name         :  LcdLine
+ * Description  :  Draws a line between two points on the display.
+ * Argument(s)  :  x1, y1 -> Absolute pixel coordinates for line origin.
+ *                 x2, y2 -> Absolute pixel coordinates for line end.
+ *                 mode   -> Off, On or Xor. See enum in pcd8544.h.
+ * Return value :  see return value on pcd8544.h
+ */
+uint8_t lcd_line (uint8_t x1, uint8_t x2, uint8_t y1, uint8_t y2, LcdPixelMode mode )
+{
+    int dx, dy, stepx, stepy, fraction;
+    byte response;
+
+    /* Calculate differential form */
+    /* dy   y2 - y1 */
+    /* -- = ------- */
+    /* dx   x2 - x1 */
+
+    /* Take differences */
+    dy = y2 - y1;
+    dx = x2 - x1;
+
+    /* dy is negative */
+    if ( dy < 0 )
+    {
+        dy    = -dy;
+        stepy = -1;
+    }
+    else
+    {
+        stepy = 1;
+    }
+
+    /* dx is negative */
+    if ( dx < 0 )
+    {
+        dx    = -dx;
+        stepx = -1;
+    }
+    else
+    {
+        stepx = 1;
+    }
+
+    dx <<= 1;
+    dy <<= 1;
+
+    /* Draw initial position */
+    response = lcd_pixel( x1, y1, mode );
+    if(response)
+        return response;
+
+    /* Draw next positions until end */
+    if ( dx > dy )
+    {
+        /* Take fraction */
+        fraction = dy - ( dx >> 1);
+        while ( x1 != x2 )
+        {
+            if ( fraction >= 0 )
+            {
+                y1 += stepy;
+                fraction -= dx;
+            }
+            x1 += stepx;
+            fraction += dy;
+
+            /* Draw calculated point */
+            response = lcd_pixel( x1, y1, mode );
+            if(response)
+                return response;
+
+        }
+    }
+    else
+    {
+        /* Take fraction */
+        fraction = dx - ( dy >> 1);
+        while ( y1 != y2 )
+        {
+            if ( fraction >= 0 )
+            {
+                x1 += stepx;
+                fraction -= dy;
+            }
+            y1 += stepy;
+            fraction += dx;
+
+            /* Draw calculated point */
+            response = lcd_pixel( x1, y1, mode );
+            if(response)
+                return response;
+        }
+    }
+
+    /* Set update flag to be true */
+    UpdateLcd = 1;
+    return OK;
+}
+
+
+void lcd_circle(char x, char y, char radius, LcdPixelMode mode)		//рисуем круг по координатам с радиусом - по Брезенхейму
+        {
+        signed char xc = 0;
+        signed char yc = 0;
+        signed char p = 0;
+        
+        if (x>LCD_X_RES || y>LCD_Y_RES) return;
+        
+        yc=radius;
+        p = 3 - (radius<<1);
+        while (xc <= yc)  
+                {
+                lcd_pixel(x + xc, y + yc, mode);
+                lcd_pixel(x + xc, y - yc, mode);
+                lcd_pixel(x - xc, y + yc, mode);
+                lcd_pixel(x - xc, y - yc, mode);
+                lcd_pixel(x + yc, y + xc, mode);
+                lcd_pixel(x + yc, y - xc, mode);
+                lcd_pixel(x - yc, y + xc, mode);
+                lcd_pixel(x - yc, y - xc, mode);
+                if (p < 0) p += (xc++ << 2) + 6;
+                        else p += ((xc++ - yc--)<<2) + 10;
+                }
+        }
+

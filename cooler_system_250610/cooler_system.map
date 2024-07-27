@@ -1,0 +1,37 @@
+CodeVisionAVR C Compiler V1.25.8 Professional
+(C) Copyright 1998-2007 Pavel Haiduc, HP InfoTech s.r.l.
+http://www.hpinfotech.com
+
+File: D:\Microcontroller_Projects\cooler_system_250610\cooler_system.c
+Global variables memory map:
+
+Variable                          Address   Size
+buffer                                                                260h     33
+mode                                                                    R5      1
+seconds                                                                 R4      1
+fan                                                                   R2.0    1/8
+con                                                                   R2.1    1/8
+alarmBtnState                                                         R2.2    1/8
+button_pressed                                                        R2.3    1/8
+tinf                                                                  281h      4
+toutf                                                                 285h      4
+tin                                                                     R7      1
+tout                                                                    R6      1
+PREV_PINC                                                               R9      1
+temp                                                                  289h      9
+ac_S7                                                                 R2.4    1/8
+__ds18b20_scratch_pad.temp_lsb                                        292h      1
+__ds18b20_scratch_pad.temp_msb                                        293h      1
+__ds18b20_scratch_pad.tem_high                                        294h      1
+__ds18b20_scratch_pad.temp_low                                        295h      1
+__ds18b20_scratch_pad.conf_register                                   296h      1
+__ds18b20_scratch_pad.res1                                            297h      1
+__ds18b20_scratch_pad.res2                                            298h      1
+__ds18b20_scratch_pad.res3                                            299h      1
+__ds18b20_scratch_pad.crc                                             29Ah      1
+therm_dq                                                                R8      1
+_base_y_G4                                                            29Bh      4
+_lcd_x                                                                 R11      1
+_lcd_y                                                                 R10      1
+_lcd_maxx                                                              R13      1
+*p_S6A                                                                29Fh      2
